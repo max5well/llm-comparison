@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: llm-compare-postgres
+    environment:
+      POSTGRES_DB: llm_compare
+      POSTGRES_USER: llmcompare
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U llmcompare"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - llm-compare-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: llm-compare-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - llm-compare-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: llm-compare-backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Server
+      ENV: ${ENV:-development}
+      DEBUG: ${DEBUG:-True}
+      HOST: 0.0.0.0
+      PORT: 8000
+
+      # Database
+      DATABASE_URL: postgresql://llmcompare:${POSTGRES_PASSWORD:-changeme}@postgres:5432/llm_compare
+
+      # Redis
+      REDIS_URL: redis://redis:6379/0
+
+      # ChromaDB
+      CHROMA_PERSIST_DIRECTORY: /app/data/chroma
+
+      # API Keys (set these in .env file)
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY}
+      TOGETHER_API_KEY: ${TOGETHER_API_KEY}
+      VOYAGE_API_KEY: ${VOYAGE_API_KEY}
+      COHERE_API_KEY: ${COHERE_API_KEY}
+
+      # Auth
+      API_KEY_SECRET: ${API_KEY_SECRET:-supersecretkey}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-jwtsupersecret}
+
+      # Settings
+      DEFAULT_CHUNK_SIZE: 1000
+      DEFAULT_CHUNK_OVERLAP: 200
+      DEFAULT_TOP_K_RETRIEVAL: 5
+      DEFAULT_LLM_TEMPERATURE: 0.7
+      DEFAULT_MAX_TOKENS: 2000
+      DEFAULT_JUDGE_MODEL: gpt-4o-mini
+      DEFAULT_JUDGE_PROVIDER: openai
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - llm-compare-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  llm-compare-network:
+    driver: bridge
