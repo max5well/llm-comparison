@@ -410,14 +410,34 @@ For issues and questions:
 - GitHub Issues: [Create an issue]
 - Email: support@example.com
 
+## Frontend Application
+
+A modern React + TypeScript frontend is now available! See [FRONTEND_SETUP.md](FRONTEND_SETUP.md) for setup instructions.
+
+**Features:**
+- Modern, responsive UI built with React and Tailwind CSS
+- Workspace and document management
+- Interactive evaluation creation
+- Real-time results visualization with charts
+- Mobile-friendly design
+
+**Quick Start:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Then open http://localhost:3000
+
 ## Roadmap
 
+- [x] Web UI dashboard
 - [ ] Real-time evaluation streaming
 - [ ] Support for more file types (HTML, Markdown, JSON)
 - [ ] Custom evaluation metrics
 - [ ] Multi-language support
 - [ ] Integration with Langchain/LlamaIndex
-- [ ] Web UI dashboard
 - [ ] Batch evaluation API
 - [ ] Export results to various formats
 
@@ -430,3 +450,4 @@ Built with:
 - Anthropic
 - PostgreSQL
 - Redis
+# llmops
