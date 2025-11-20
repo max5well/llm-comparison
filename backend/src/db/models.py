@@ -200,3 +200,65 @@ class ProviderAPIKey(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class QuestionMetrics(Base):
+    """Store detailed metrics for each question-model combination."""
+    __tablename__ = "question_metrics"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    model_result_id = Column(UUID(as_uuid=True), ForeignKey("model_results.id", ondelete="CASCADE"), nullable=False, index=True)
+    evaluation_id = Column(UUID(as_uuid=True), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False, index=True)
+    question_id = Column(UUID(as_uuid=True), ForeignKey("test_questions.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # LLM Judge Metrics (0-1 scores)
+    accuracy_score = Column(DECIMAL(4, 3))  # e.g., 0.923
+    faithfulness_score = Column(DECIMAL(4, 3))
+    reasoning_score = Column(DECIMAL(4, 3))
+    context_utilization_score = Column(DECIMAL(4, 3))
+
+    # Automated Metrics (already in model_results, but duplicated here for convenience)
+    latency_ms = Column(Integer)
+    cost_usd = Column(DECIMAL(10, 6))
+
+    # LLM Judge Explanations
+    accuracy_explanation = Column(Text)
+    faithfulness_explanation = Column(Text)
+    reasoning_explanation = Column(Text)
+    context_utilization_explanation = Column(Text)
+
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+class EvaluationSummary(Base):
+    """Store aggregate metrics for entire evaluation (all models, all questions)."""
+    __tablename__ = "evaluation_summaries"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id = Column(UUID(as_uuid=True), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+
+    # Average LLM Judge Metrics across all models and questions
+    avg_accuracy = Column(DECIMAL(4, 3))
+    avg_faithfulness = Column(DECIMAL(4, 3))
+    avg_reasoning = Column(DECIMAL(4, 3))
+    avg_context_utilization = Column(DECIMAL(4, 3))
+
+    # Average Automated Metrics
+    avg_latency_ms = Column(Integer)
+    avg_cost_usd = Column(DECIMAL(10, 6))
+    total_cost_usd = Column(DECIMAL(10, 4))
+
+    # Overall Score (weighted combination of metrics)
+    overall_score = Column(DECIMAL(5, 2))
+
+    # Counts
+    total_questions = Column(Integer, nullable=False)
+    total_model_tests = Column(Integer, nullable=False)  # questions × models
+    successful_evaluations = Column(Integer, default=0)
+    failed_evaluations = Column(Integer, default=0)
+
+    # Model-specific summary (JSON with per-model averages)
+    models_summary = Column(JSON)  # {"gpt-4": {...}, "claude-3": {...}}
+
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
