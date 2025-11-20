@@ -3,15 +3,12 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft,
   Upload,
-  FileText,
   PlayCircle,
-  Database,
-  BarChart3,
+  Settings,
   RefreshCw,
   Trash2,
   Edit2,
   Check,
-  X,
 } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -30,9 +27,7 @@ export const WorkspaceDetail: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
   const [bulkProcessing, setBulkProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'documents' | 'datasets' | 'evaluations'>('documents');
   const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
-  const [deleting, setDeleting] = useState(false);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editingFilename, setEditingFilename] = useState('');
 
@@ -232,7 +227,6 @@ export const WorkspaceDetail: React.FC = () => {
       return;
     }
 
-    setDeleting(true);
     let successCount = 0;
     let failCount = 0;
 
@@ -261,7 +255,7 @@ export const WorkspaceDetail: React.FC = () => {
         alert(`Deleted ${successCount} document(s). ${failCount} failed.`);
       }
     } finally {
-      setDeleting(false);
+      // no extra state
     }
   };
 
@@ -307,6 +301,13 @@ export const WorkspaceDetail: React.FC = () => {
     return badges[status as keyof typeof badges] || 'badge-info';
   };
 
+  const documentStats = {
+    total: documents.length,
+    pending: documents.filter(doc => doc.processing_status === 'pending').length,
+    processing: documents.filter(doc => doc.processing_status === 'processing').length,
+    completed: documents.filter(doc => doc.processing_status === 'completed').length,
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -328,76 +329,6 @@ export const WorkspaceDetail: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header Card */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <button
-                onClick={() => navigate('/workspaces')}
-                className="text-sm text-gray-500 mb-2 inline-flex items-center gap-2"
-              >
-                <ArrowLeft size={16} />
-                Back to Workspaces
-              </button>
-              <h1 className="text-3xl font-semibold text-gray-900">{workspace.name}</h1>
-              {workspace.description && (
-                <p className="text-gray-600 mt-2">{workspace.description}</p>
-              )}
-              <div className="flex flex-wrap gap-2 mt-4">
-                <span className="badge badge-info">{workspace.embedding_provider}</span>
-                <span className="badge badge-info">{workspace.embedding_model}</span>
-                <span className="badge badge-info">
-                  Chunk: {workspace.chunk_size} / {workspace.chunk_overlap}
-                </span>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition flex items-center gap-2">
-                <Settings size={16} />
-                Settings
-              </button>
-              <button className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center gap-2">
-                <Play size={16} />
-                Run Evaluation
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Tabbed Card */}
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-8 px-6 pt-6">
-            {['documents', 'datasets', 'evaluations'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`pb-4 text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)} (
-                {tab === 'documents'
-                  ? documents.length
-                  : tab === 'datasets'
-                  ? datasets.length
-                  : evaluations.length}
-                )
-              </button>
-            ))}
-            <div className="flex-1" />
-            <div className="px-4 py-1 rounded-xl bg-blue-50 text-blue-600 text-xs font-semibold">
-              Last updated{' '}
-              <span className="font-medium">
-                {documents.length > 0
-                  ? formatDistanceToNow(new Date(documents[0].created_at), { addSuffix: true })
-                  : 'just now'}
-              </span>
-            </div>
-          </div>
-          <div className="px-6 pb-6">
-            {activeTab === 'documents' && (
               <div className="space-y-5">
                 {documents.length === 0 ? (
                   <div className="text-center py-12">
