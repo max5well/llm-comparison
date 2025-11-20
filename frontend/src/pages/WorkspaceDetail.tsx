@@ -1,15 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import {
-  ArrowLeft,
-  Upload,
-  PlayCircle,
-  Settings,
-  RefreshCw,
-  Trash2,
-  Edit2,
-  Check,
-} from 'lucide-react';
+import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, FileText } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api } from '../services/api';
@@ -24,12 +15,9 @@ export const WorkspaceDetail: React.FC = () => {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
   const [bulkProcessing, setBulkProcessing] = useState(false);
-  const [selectedDocuments, setSelectedDocuments] = useState<Set<string>>(new Set());
-  const [editingDocId, setEditingDocId] = useState<string | null>(null);
-  const [editingFilename, setEditingFilename] = useState('');
+  const [activeTab, setActiveTab] = useState<'documents' | 'datasets' | 'evaluations'>('documents');
 
   useEffect(() => {
     if (id) {
@@ -97,200 +85,6 @@ export const WorkspaceDetail: React.FC = () => {
     }
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0 || !id) return;
-
-    setUploading(true);
-    const uploadedDocs: Document[] = [];
-    let successCount = 0;
-    let failCount = 0;
-
-    try {
-      // Upload files sequentially to avoid overwhelming the server
-      for (let i = 0; i < files.length; i++) {
-        try {
-          const document = await api.uploadDocument(id, files[i]);
-          uploadedDocs.push(document);
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to upload ${files[i].name}:`, error);
-          failCount++;
-        }
-      }
-
-      // Update documents list with successfully uploaded files
-      if (uploadedDocs.length > 0) {
-        setDocuments([...documents, ...uploadedDocs]);
-      }
-
-      // Show summary message
-      if (files.length === 1) {
-        if (successCount > 0) {
-          alert('Document uploaded successfully!');
-        } else {
-          alert('Failed to upload document');
-        }
-      } else {
-        alert(`Uploaded ${successCount} of ${files.length} files successfully${failCount > 0 ? `. ${failCount} failed.` : '.'}`);
-      }
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleProcessDocument = async (documentId: string) => {
-    setProcessing(documentId);
-    try {
-      await api.processDocument(documentId);
-      // Reload documents to get updated status
-      if (id) {
-        const documentsData = await api.listDocuments(id);
-        setDocuments(documentsData);
-      }
-    } catch (error) {
-      console.error('Failed to process document:', error);
-      alert('Failed to process document');
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  const handleProcessAllPending = async () => {
-    const pendingDocs = documents.filter(doc => doc.processing_status === 'pending');
-    if (pendingDocs.length === 0) {
-      alert('No pending documents to process');
-      return;
-    }
-
-    if (!confirm(`Process ${pendingDocs.length} pending document(s)?`)) {
-      return;
-    }
-
-    setBulkProcessing(true);
-    let successCount = 0;
-    let failCount = 0;
-
-    try {
-      for (const doc of pendingDocs) {
-        try {
-          await api.processDocument(doc.id);
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to process ${doc.filename}:`, error);
-          failCount++;
-        }
-      }
-
-      // Reload documents
-      if (id) {
-        const documentsData = await api.listDocuments(id);
-        setDocuments(documentsData);
-      }
-
-      if (failCount === 0) {
-        alert(`Successfully started processing ${successCount} document(s)`);
-      } else {
-        alert(`Started processing ${successCount} document(s). ${failCount} failed.`);
-      }
-    } finally {
-      setBulkProcessing(false);
-    }
-  };
-
-  const toggleDocumentSelection = (documentId: string) => {
-    const newSelection = new Set(selectedDocuments);
-    if (newSelection.has(documentId)) {
-      newSelection.delete(documentId);
-    } else {
-      newSelection.add(documentId);
-    }
-    setSelectedDocuments(newSelection);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedDocuments.size === documents.length) {
-      setSelectedDocuments(new Set());
-    } else {
-      setSelectedDocuments(new Set(documents.map(d => d.id)));
-    }
-  };
-
-  const handleDeleteSelected = async () => {
-    if (selectedDocuments.size === 0) {
-      alert('No documents selected');
-      return;
-    }
-
-    if (!confirm(`Delete ${selectedDocuments.size} selected document(s)? This action cannot be undone.`)) {
-      return;
-    }
-
-    let successCount = 0;
-    let failCount = 0;
-
-    try {
-      for (const docId of selectedDocuments) {
-        try {
-          await api.deleteDocument(docId);
-          successCount++;
-        } catch (error) {
-          console.error(`Failed to delete document ${docId}:`, error);
-          failCount++;
-        }
-      }
-
-      // Reload documents
-      if (id) {
-        const documentsData = await api.listDocuments(id);
-        setDocuments(documentsData);
-      }
-
-      setSelectedDocuments(new Set());
-
-      if (failCount === 0) {
-        alert(`Successfully deleted ${successCount} document(s)`);
-      } else {
-        alert(`Deleted ${successCount} document(s). ${failCount} failed.`);
-      }
-    } finally {
-      // no extra state
-    }
-  };
-
-  const startEditingDocument = (doc: Document) => {
-    setEditingDocId(doc.id);
-    setEditingFilename(doc.filename);
-  };
-
-  const cancelEditingDocument = () => {
-    setEditingDocId(null);
-    setEditingFilename('');
-  };
-
-  const saveDocumentName = async (docId: string) => {
-    if (!editingFilename.trim()) {
-      alert('Filename cannot be empty');
-      return;
-    }
-
-    try {
-      await api.updateDocument(docId, { filename: editingFilename });
-
-      // Update local state
-      setDocuments(documents.map(d =>
-        d.id === docId ? { ...d, filename: editingFilename } : d
-      ));
-
-      setEditingDocId(null);
-      setEditingFilename('');
-    } catch (error) {
-      console.error('Failed to update document name:', error);
-      alert('Failed to update document name');
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     const badges = {
       pending: 'badge-warning',
@@ -329,6 +123,77 @@ export const WorkspaceDetail: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
+        {/* Header card */}
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <Link
+                to="/workspaces"
+                className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-2 gap-2"
+              >
+                <ArrowLeft size={16} />
+                Back to Workspaces
+              </Link>
+              <h1 className="text-3xl font-semibold text-gray-900">{workspace?.name}</h1>
+              {workspace?.description && (
+                <p className="text-gray-500 mt-2">{workspace.description}</p>
+              )}
+              <div className="flex flex-wrap gap-3 mt-4 text-xs uppercase font-semibold">
+                <span className="px-3 py-1 rounded-full border border-gray-200">{workspace?.embedding_provider}</span>
+                <span className="px-3 py-1 rounded-full border border-gray-200">{workspace?.embedding_model}</span>
+                <span className="px-3 py-1 rounded-full border border-gray-200">
+                  Chunk: {workspace?.chunk_size} / {workspace?.chunk_overlap}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="px-5 py-2 rounded-2xl border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400">
+                Settings
+              </button>
+              <Link
+                to={`/workspaces/${workspace?.id}/evaluations/new`}
+                className="px-5 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+              >
+                Run Evaluation
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs card */}
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-8 px-6 pt-6">
+            {['documents', 'datasets', 'evaluations'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab as typeof activeTab)}
+                className={`pb-4 text-sm font-semibold transition-colors ${
+                  activeTab === tab
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-500 border-b-2 border-transparent hover:text-gray-800 hover:border-gray-300'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)} (
+                {tab === 'documents'
+                  ? documentStats.total
+                  : tab === 'datasets'
+                  ? datasets.length
+                  : evaluations.length}
+                )
+              </button>
+            ))}
+            <div className="flex-1" />
+            <div className="px-4 py-1 rounded-xl bg-blue-50 text-blue-600 text-xs font-semibold">
+              Last updated{' '}
+              <span className="font-medium">
+                {documents.length > 0
+                  ? formatDistanceToNow(new Date(documents[0].created_at), { addSuffix: true })
+                  : 'just now'}
+              </span>
+            </div>
+          </div>
+          <div className="px-6 pb-6">
+            {activeTab === 'documents' && (
               <div className="space-y-5">
                 {documents.length === 0 ? (
                   <div className="text-center py-12">
@@ -354,7 +219,7 @@ export const WorkspaceDetail: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                           <span className={`badge ${getStatusBadge(document.processing_status)}`}>
                             {document.processing_status}
                           </span>
