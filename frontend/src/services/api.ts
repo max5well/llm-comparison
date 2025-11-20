@@ -261,6 +261,21 @@ class ApiClient {
     );
     return response.data;
   }
+
+  // New Evaluation Metrics endpoints
+  async getEvaluationMetrics(evaluationId: string): Promise<any> {
+    const response = await this.client.get(
+      `/evaluation/${evaluationId}/metrics`
+    );
+    return response.data;
+  }
+
+  async getEvaluationMetricsSummary(evaluationId: string): Promise<any> {
+    const response = await this.client.get(
+      `/evaluation/${evaluationId}/summary`
+    );
+    return response.data;
+  }
 }
 
 export const api = new ApiClient();

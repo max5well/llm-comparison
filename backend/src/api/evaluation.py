@@ -633,9 +633,9 @@ Answer:"""
                 # Calculate averages
                 total_metrics = len(all_metrics)
                 avg_accuracy = sum(m.accuracy_score for m in all_metrics if m.accuracy_score is not None) / sum(1 for m in all_metrics if m.accuracy_score is not None) if any(m.accuracy_score is not None for m in all_metrics) else None
-                avg_faithfulness = sum(m.faithfulness_score for m in all_metrics if m.faithfulness_score) / total_metrics
-                avg_reasoning = sum(m.reasoning_score for m in all_metrics if m.reasoning_score) / total_metrics
-                avg_context_util = sum(m.context_utilization_score for m in all_metrics if m.context_utilization_score) / total_metrics
+                avg_faithfulness = sum(m.faithfulness_score for m in all_metrics if m.faithfulness_score is not None) / sum(1 for m in all_metrics if m.faithfulness_score is not None) if any(m.faithfulness_score is not None for m in all_metrics) else None
+                avg_reasoning = sum(m.reasoning_score for m in all_metrics if m.reasoning_score is not None) / sum(1 for m in all_metrics if m.reasoning_score is not None) if any(m.reasoning_score is not None for m in all_metrics) else None
+                avg_context_util = sum(m.context_utilization_score for m in all_metrics if m.context_utilization_score is not None) / sum(1 for m in all_metrics if m.context_utilization_score is not None) if any(m.context_utilization_score is not None for m in all_metrics) else None
                 avg_latency = int(sum(m.latency_ms for m in all_metrics) / total_metrics)
                 avg_cost = sum(m.cost_usd for m in all_metrics) / total_metrics
                 total_cost = sum(m.cost_usd for m in all_metrics)
@@ -654,11 +654,8 @@ Answer:"""
                     model_key = f"{model_config['provider']}:{model_config['model']}"
 
                     # Get metrics for this specific model
-                    model_results = db.query(QuestionMetrics).join(
-                        QuestionMetrics.__table__
-                    ).filter(
-                        QuestionMetrics.evaluation_id == evaluation_id
-                    ).all()
+                    # Note: Would need proper join with ModelResult table to filter by model
+                    # For now, we store the model config in summary
 
                     # Filter by checking model_result's model name (would need join)
                     # For now, store aggregate data

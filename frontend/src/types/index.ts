@@ -159,6 +159,52 @@ export interface EvaluationDetails {
   detailed_results: DetailedResult[];
 }
 
+// New Evaluation Metrics Types
+export interface QuestionMetric {
+  question_id: string;
+  accuracy_score: number | null;
+  faithfulness_score: number | null;
+  reasoning_score: number | null;
+  context_utilization_score: number | null;
+  latency_ms: number;
+  cost_usd: number;
+  accuracy_explanation?: string;
+  faithfulness_explanation?: string;
+  reasoning_explanation?: string;
+  context_utilization_explanation?: string;
+}
+
+export interface EvaluationMetricsSummary {
+  evaluation_id: string;
+  avg_accuracy: number | null;
+  avg_faithfulness: number | null;
+  avg_reasoning: number | null;
+  avg_context_utilization: number | null;
+  avg_latency_ms: number;
+  avg_cost_usd: number;
+  total_cost_usd: number;
+  overall_score: number | null;
+  total_questions: number;
+  total_model_tests: number;
+  successful_evaluations: number;
+  failed_evaluations: number;
+  models_summary: Record<string, {
+    model: string;
+    provider: string;
+  }>;
+  created_at: string;
+}
+
+export interface EvaluationMetricsByModel {
+  evaluation_id: string;
+  metrics_by_model: Record<string, {
+    model: string;
+    provider: string;
+    questions: QuestionMetric[];
+  }>;
+  total_metrics: number;
+}
+
 // Provider Options
 export const LLM_PROVIDERS = [
   { value: 'openai', label: 'OpenAI' },
