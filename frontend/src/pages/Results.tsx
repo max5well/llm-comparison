@@ -1,27 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   Target,
   Shield,
-  Brain,
-  FileText,
   Clock,
   DollarSign,
   ChevronDown,
   ChevronUp,
   Trophy,
+  Download,
+  Share2,
+  Search,
+  Filter,
+  ChevronRight,
+  ListChecks,
 } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { StatusBadge } from '../components/StatusBadge';
-import { MetricCard } from '../components/MetricCard';
 import { MetricChart } from '../components/MetricChart';
 import { ModelLeaderboard, type ModelRanking } from '../components/ModelLeaderboard';
 import { api } from '../services/api';
 import type {
   EvaluationDetails,
-  DetailedResult,
   EvaluationMetricsSummary,
   EvaluationMetricsByModel,
 } from '../types';
@@ -47,12 +47,30 @@ export const Results: React.FC = () => {
     try {
       const [results, summary, metrics] = await Promise.all([
         api.getEvaluationDetails(id),
-        api.getEvaluationMetricsSummary(id).catch(() => null),
-        api.getEvaluationMetrics(id).catch(() => null),
+        api.getEvaluationMetricsSummary(id).catch((err) => {
+          console.log('Metrics summary not available:', err.response?.status, err.response?.data);
+          return null;
+        }),
+        api.getEvaluationMetrics(id).catch((err) => {
+          console.log('Metrics by model not available:', err.response?.status, err.response?.data);
+          return null;
+        }),
       ]);
       setData(results);
       setMetricsSummary(summary);
       setMetricsByModel(metrics);
+      
+      // Debug logging
+      if (summary) {
+        console.log('✅ Metrics summary loaded:', summary);
+      } else {
+        console.log('⚠️ No metrics summary available for this evaluation');
+      }
+      if (metrics) {
+        console.log('✅ Metrics by model loaded:', metrics);
+      } else {
+        console.log('⚠️ No metrics by model available for this evaluation');
+      }
     } catch (error) {
       console.error('Failed to load results:', error);
     } finally {
@@ -97,7 +115,7 @@ export const Results: React.FC = () => {
     const rankings: ModelRanking[] = [];
     let rank = 1;
 
-    Object.entries(metricsByModel.metrics_by_model).forEach(([modelKey, modelData]) => {
+    Object.entries(metricsByModel.metrics_by_model).forEach(([, modelData]) => {
       const questions = modelData.questions;
       const avgAccuracy = questions.reduce((sum, q) => sum + (q.accuracy_score || 0), 0) / questions.length;
       const avgFaithfulness = questions.reduce((sum, q) => sum + (q.faithfulness_score || 0), 0) / questions.length;
@@ -155,107 +173,172 @@ export const Results: React.FC = () => {
     });
   };
 
+  // Format date and calculate duration
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
+  const calculateDuration = (start?: string, end?: string) => {
+    if (!start || !end) return 'N/A';
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    const diffMs = endTime - startTime;
+    const minutes = Math.floor(diffMs / 60000);
+    const seconds = Math.floor((diffMs % 60000) / 1000);
+    return `${minutes}m ${seconds}s`;
+  };
+
+  const totalQueries = summary.total_questions * summary.models.length;
+  const modelCount = summary.models.length;
+
   return (
     <Layout>
-      <div className="space-y-8">
-        {/* Header */}
-        <div>
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Back
-          </button>
-
-          <div className="flex justify-between items-start">
+      {/* Header Section - Matching Mockup */}
+      <section className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {summary.evaluation_name}
-              </h1>
+              {/* Breadcrumb */}
+              <div className="flex items-center space-x-3 mb-2 text-sm">
+                <button
+                  onClick={() => navigate('/workspaces')}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Workspaces
+                </button>
+                <ChevronRight size={12} className="text-gray-400" />
+                <span className="text-gray-500">{summary.dataset_name}</span>
+                <ChevronRight size={12} className="text-gray-400" />
+                <span className="text-gray-900 font-medium">Evaluation Results</span>
+              </div>
+              <h1 className="text-3xl font-bold">Evaluation Results</h1>
               <p className="text-gray-600 mt-2">
-                Dataset: {summary.dataset_name} • {summary.total_questions}{' '}
-                questions
+                Comparing {modelCount} models across {summary.total_questions} questions
               </p>
             </div>
-            <StatusBadge status={summary.status as any} />
+            <div className="flex items-center space-x-3">
+              <button className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium flex items-center space-x-2">
+                <Download size={16} />
+                <span>Export JSONL</span>
+              </button>
+              <button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium flex items-center space-x-2">
+                <Share2 size={16} />
+                <span>Share Results</span>
+              </button>
+            </div>
+          </div>
+          {/* Status with time */}
+          <div className="flex items-center space-x-2">
+            <div className="inline-flex items-center space-x-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-green-700 font-medium">
+                {summary.status === 'completed' ? 'Completed' : summary.status}
+              </span>
+            </div>
+            <span className="text-sm text-gray-500">
+              Run on {formatDate(summary.completed_at || summary.created_at)}
+            </span>
+            {summary.completed_at && (
+              <>
+                <span className="text-sm text-gray-400">•</span>
+                <span className="text-sm text-gray-500">
+                  Duration: {calculateDuration(summary.created_at, summary.completed_at)}
+                </span>
+              </>
+            )}
           </div>
         </div>
+      </section>
 
-        {/* 6 Metric Cards */}
-        {metricsSummary && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <MetricCard
-              title="Overall Score"
-              value={metricsSummary.overall_score}
-              icon={Trophy}
-              color="blue"
-              formatValue={(v) => `${(v * 100).toFixed(1)}%`}
-              subtitle="Weighted average of all metrics"
-            />
-            <MetricCard
-              title="Accuracy"
-              value={metricsSummary.avg_accuracy}
-              icon={Target}
-              color="green"
-              formatValue={(v) => `${(v * 100).toFixed(1)}%`}
-              subtitle="Semantic correctness"
-            />
-            <MetricCard
-              title="Faithfulness"
-              value={metricsSummary.avg_faithfulness}
-              icon={Shield}
-              color="purple"
-              formatValue={(v) => `${(v * 100).toFixed(1)}%`}
-              subtitle="No hallucination"
-            />
-            <MetricCard
-              title="Reasoning"
-              value={metricsSummary.avg_reasoning}
-              icon={Brain}
-              color="orange"
-              formatValue={(v) => `${(v * 100).toFixed(1)}%`}
-              subtitle="Logical flow quality"
-            />
-            <MetricCard
-              title="Context Utilization"
-              value={metricsSummary.avg_context_utilization}
-              icon={FileText}
-              color="blue"
-              formatValue={(v) => `${(v * 100).toFixed(1)}%`}
-              subtitle="RAG usage"
-            />
-            <MetricCard
-              title="Average Latency"
-              value={metricsSummary.avg_latency_ms}
-              icon={Clock}
-              color="gray"
-              formatValue={(v) => `${v.toFixed(0)}ms`}
-              subtitle="Response time"
-            />
+      {/* Metrics Overview - 5 Cards in Single Row */}
+      <section className="max-w-7xl mx-auto px-6 py-8">
+        {!metricsSummary && summary.status === 'completed' && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+            <p className="text-yellow-800 text-sm">
+              <strong>Note:</strong> This evaluation was created before the new metrics system. 
+              Create a new evaluation to see detailed metrics.
+            </p>
           </div>
         )}
-
-        {/* Cost Card (separate row) */}
+        
         {metricsSummary && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <MetricCard
-              title="Total Cost"
-              value={metricsSummary.total_cost_usd}
-              icon={DollarSign}
-              color="red"
-              formatValue={(v) => `$${v.toFixed(4)}`}
-              subtitle={`Average: $${metricsSummary.avg_cost_usd.toFixed(4)} per query`}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {/* Accuracy */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Accuracy</span>
+                <Target className="text-blue-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {metricsSummary.avg_accuracy ? `${(metricsSummary.avg_accuracy * 100).toFixed(1)}%` : 'N/A'}
+              </div>
+            </div>
+            
+            {/* Faithfulness */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Faithfulness</span>
+                <Shield className="text-purple-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {metricsSummary.avg_faithfulness ? `${(metricsSummary.avg_faithfulness * 100).toFixed(1)}%` : 'N/A'}
+              </div>
+            </div>
+            
+            {/* Avg Latency */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Avg Latency</span>
+                <Clock className="text-orange-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {metricsSummary.avg_latency_ms < 1000 
+                  ? `${metricsSummary.avg_latency_ms.toFixed(0)}ms`
+                  : `${(metricsSummary.avg_latency_ms / 1000).toFixed(1)}s`}
+              </div>
+            </div>
+            
+            {/* Avg Cost */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Avg Cost</span>
+                <DollarSign className="text-green-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                ${metricsSummary.avg_cost_usd.toFixed(4)}
+              </div>
+            </div>
+            
+            {/* Total Queries */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Total Queries</span>
+                <ListChecks className="text-indigo-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">{totalQueries}</div>
+              <div className="flex items-center mt-2 text-xs text-gray-500">
+                <span>{summary.total_questions} questions × {modelCount} models</span>
+              </div>
+            </div>
           </div>
         )}
+      </section>
 
         {/* Model Leaderboard */}
         {rankings.length > 0 && (
           <ModelLeaderboard rankings={rankings} />
         )}
 
-        {/* Metric Comparison Charts */}
+      {/* Comparison Charts - 2 Column Grid */}
+      <section className="max-w-7xl mx-auto px-6 pb-8">
         {metricsByModel && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <MetricChart
@@ -263,11 +346,11 @@ export const Results: React.FC = () => {
               data={prepareChartData('accuracy')}
               metricName="Accuracy"
               formatValue={(v) => `${(v * 100).toFixed(1)}%`}
-              color="#10b981"
+              color="#3b82f6"
               yAxisDomain={[0, 1]}
             />
             <MetricChart
-              title="Faithfulness Comparison"
+              title="Faithfulness Score"
               data={prepareChartData('faithfulness')}
               metricName="Faithfulness"
               formatValue={(v) => `${(v * 100).toFixed(1)}%`}
@@ -275,7 +358,7 @@ export const Results: React.FC = () => {
               yAxisDomain={[0, 1]}
             />
             <MetricChart
-              title="Reasoning Comparison"
+              title="Reasoning Score"
               data={prepareChartData('reasoning')}
               metricName="Reasoning"
               formatValue={(v) => `${(v * 100).toFixed(1)}%`}
@@ -283,7 +366,7 @@ export const Results: React.FC = () => {
               yAxisDomain={[0, 1]}
             />
             <MetricChart
-              title="Context Utilization Comparison"
+              title="Context Utilization"
               data={prepareChartData('context_utilization')}
               metricName="Context Utilization"
               formatValue={(v) => `${(v * 100).toFixed(1)}%`}
@@ -291,29 +374,52 @@ export const Results: React.FC = () => {
               yAxisDomain={[0, 1]}
             />
             <MetricChart
-              title="Latency Comparison"
+              title="Average Latency"
               data={prepareChartData('latency')}
               metricName="Latency"
-              formatValue={(v) => `${v.toFixed(0)}ms`}
+              formatValue={(v) => v < 1000 ? `${v.toFixed(0)}ms` : `${(v / 1000).toFixed(1)}s`}
               color="#6b7280"
               chartType="bar"
             />
             <MetricChart
-              title="Cost Comparison"
+              title="Cost per Query"
               data={prepareChartData('cost')}
-              metricName="Total Cost"
+              metricName="Cost"
               formatValue={(v) => `$${v.toFixed(4)}`}
               color="#ef4444"
               chartType="bar"
             />
           </div>
         )}
+      </section>
 
-        {/* Detailed Results */}
-        <div className="card">
-          <h3 className="text-xl font-semibold mb-4">Detailed Results</h3>
+      {/* Per-Question Analysis Section */}
+      <section className="max-w-7xl mx-auto px-6 pb-12">
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Per-Question Analysis</h3>
+                <p className="text-sm text-gray-600">Detailed comparison for each evaluation question</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                  <input
+                    type="text"
+                    placeholder="Search questions..."
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <button className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm flex items-center">
+                  <Filter size={14} className="mr-2" />
+                  Filter
+                </button>
+              </div>
+            </div>
+          </div>
 
-          <div className="space-y-3">
+          <div className="divide-y divide-gray-200">
             {detailed_results.map((result) => (
               <div key={result.question_id} className="border border-gray-200 rounded-lg">
                 <button
@@ -390,7 +496,7 @@ export const Results: React.FC = () => {
             ))}
           </div>
         </div>
-      </div>
+      </section>
     </Layout>
   );
 };
