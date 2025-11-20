@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Cloud, Upload, Settings, CheckCircle, Database, FileText, DollarSign } from 'lucide-react';
+import {
+  Cloud,
+  Upload,
+  Settings,
+  CheckCircle,
+  Database,
+  FileText,
+  DollarSign,
+} from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { api } from '../services/api';
 import { EMBEDDING_PROVIDERS, EMBEDDING_MODELS } from '../types';

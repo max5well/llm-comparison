@@ -144,7 +144,7 @@ export const Results: React.FC = () => {
     return sorted.map((ranking, idx) => ({
       ...ranking,
       rank: idx + 1,
-    }));
+  }));
   };
 
   const rankings = prepareModelRankings();
@@ -205,15 +205,15 @@ export const Results: React.FC = () => {
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center justify-between mb-6">
-            <div>
+        <div>
               {/* Breadcrumb */}
               <div className="flex items-center space-x-3 mb-2 text-sm">
-                <button
+          <button
                   onClick={() => navigate('/workspaces')}
                   className="text-gray-500 hover:text-gray-700"
-                >
+          >
                   Workspaces
-                </button>
+          </button>
                 <ChevronRight size={12} className="text-gray-400" />
                 <span className="text-gray-500">{summary.dataset_name}</span>
                 <ChevronRight size={12} className="text-gray-400" />
@@ -280,8 +280,8 @@ export const Results: React.FC = () => {
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_accuracy ? `${(metricsSummary.avg_accuracy * 100).toFixed(1)}%` : 'N/A'}
               </div>
-            </div>
-            
+              </div>
+
             {/* Faithfulness */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
@@ -290,15 +290,15 @@ export const Results: React.FC = () => {
               </div>
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_faithfulness ? `${(metricsSummary.avg_faithfulness * 100).toFixed(1)}%` : 'N/A'}
-              </div>
-            </div>
+                </div>
+                </div>
             
             {/* Avg Latency */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Avg Latency</span>
+                  <span className="text-sm text-gray-600">Avg Latency</span>
                 <Clock className="text-orange-500" size={18} />
-              </div>
+                </div>
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_latency_ms < 1000 
                   ? `${metricsSummary.avg_latency_ms.toFixed(0)}ms`
@@ -315,8 +315,8 @@ export const Results: React.FC = () => {
               <div className="text-2xl font-bold text-gray-900">
                 ${metricsSummary.avg_cost_usd.toFixed(4)}
               </div>
-            </div>
-            
+        </div>
+
             {/* Total Queries */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
@@ -340,7 +340,7 @@ export const Results: React.FC = () => {
       {/* Comparison Charts - 2 Column Grid */}
       <section className="max-w-7xl mx-auto px-6 pb-8">
         {metricsByModel && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <MetricChart
               title="Accuracy Comparison"
               data={prepareChartData('accuracy')}
@@ -417,7 +417,7 @@ export const Results: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+        </div>
 
           <div className="divide-y divide-gray-200">
             {detailed_results.map((result) => (

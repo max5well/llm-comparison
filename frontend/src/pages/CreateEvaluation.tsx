@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, ArrowRight, Play } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api } from '../services/api';
@@ -31,6 +31,10 @@ export const CreateEvaluation: React.FC = () => {
     dataset_id: '',
     judge_provider: 'openai',
     judge_model: 'gpt-4o-mini',
+    temperature: 0.7,
+    max_tokens: 512,
+    top_k: 5,
+    similarity: 0.75,
   });
   const [modelsToTest, setModelsToTest] = useState<ModelConfig[]>([
     { provider: 'openai', model: 'gpt-4o-mini' },
@@ -122,13 +126,13 @@ export const CreateEvaluation: React.FC = () => {
         <div className="max-w-2xl mx-auto">
           <button
             onClick={() => navigate(`/workspaces/${workspaceId}`)}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
+            className="text-sm text-gray-600 hover:text-gray-900 mb-6 inline-flex items-center gap-2"
           >
-            <ArrowLeft size={20} className="mr-2" />
+            <ArrowLeft size={16} />
             Back to Workspace
           </button>
 
-          <div className="card text-center py-12">
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               No datasets available
             </h3>
@@ -147,166 +151,326 @@ export const CreateEvaluation: React.FC = () => {
     );
   }
 
+  const selectedDataset = datasets.find((dataset) => dataset.id === formData.dataset_id);
+  const datasetName = selectedDataset?.name || 'Select a dataset';
+  const totalQuestions = selectedDataset?.total_questions || 0;
+  const estimatedCost = (totalQuestions * modelsToTest.length) * 0.0002;
+  const estimatedTime = Math.max(1, Math.ceil(totalQuestions * 0.03));
+
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <button
           onClick={() => navigate(`/workspaces/${workspaceId}`)}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-6"
+          className="text-sm text-gray-600 hover:text-gray-900 mb-4 inline-flex items-center gap-2"
         >
-          <ArrowLeft size={20} className="mr-2" />
+          <ArrowLeft size={16} />
           Back to Workspace
         </button>
 
-        <div className="card">
-          <h1 className="text-2xl font-bold mb-6">Create New Evaluation</h1>
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Create Evaluation</h1>
+          <p className="text-sm text-gray-600 mt-2">
+            Use the mockup workflow to configure datasets, models, and judge preferences.
+          </p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="label">Evaluation Name *</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="input"
-                placeholder="e.g., GPT-4 vs Claude 3.5"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="label">Test Dataset *</label>
-              <select
-                value={formData.dataset_id}
-                onChange={(e) =>
-                  setFormData({ ...formData, dataset_id: e.target.value })
-                }
-                className="input"
-                required
-              >
+        <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
+          <form
+            id="evaluation-form"
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
+            {/* Dataset Selection */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Select Dataset</h2>
+                  <p className="text-sm text-gray-500">
+                    Choose the dataset to evaluate on this run.
+                  </p>
+                </div>
+                <span className="text-xs text-gray-500">{datasets.length} datasets</span>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
                 {datasets.map((dataset) => (
-                  <option key={dataset.id} value={dataset.id}>
-                    {dataset.name} ({dataset.total_questions} questions)
-                  </option>
+                  <article
+                    key={dataset.id}
+                    onClick={() => setFormData({ ...formData, dataset_id: dataset.id })}
+                    className={`border rounded-2xl p-5 cursor-pointer transition ${
+                      formData.dataset_id === dataset.id
+                        ? 'border-blue-500 bg-blue-50 shadow-sm'
+                        : 'border-gray-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900">{dataset.name}</h3>
+                      <span className="text-xs text-gray-500">{dataset.total_questions} qs</span>
+                    </div>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {dataset.description || 'Generated dataset'}
+                    </p>
+                    <div className="flex items-center gap-3 mt-4 text-xs text-gray-500">
+                      <span>Owner</span>
+                      <span>•</span>
+                      <span>Created {new Date(dataset.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </article>
                 ))}
-              </select>
-            </div>
+              </div>
+            </section>
 
-            <div>
-              <div className="flex justify-between items-center mb-3">
-                <label className="label mb-0">Models to Test *</label>
+            {/* Model Selection */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Models to Compare</h2>
+                  <p className="text-sm text-gray-500">
+                    Add multiple LLMs to compare side-by-side.
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={addModel}
-                  className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center"
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 text-sm rounded-full text-primary-600 hover:border-primary-400 transition"
                 >
-                  <Plus size={16} className="mr-1" />
+                  <Plus size={14} />
                   Add Model
                 </button>
               </div>
-
-              <div className="space-y-3">
+              <div className="grid gap-4 md:grid-cols-2">
                 {modelsToTest.map((model, index) => (
-                  <div key={index} className="flex gap-3">
-                    <select
-                      value={model.provider}
-                      onChange={(e) =>
-                        updateModel(index, 'provider', e.target.value)
-                      }
-                      className="input flex-1"
-                    >
-                      {LLM_PROVIDERS.map((provider) => (
-                        <option key={provider.value} value={provider.value}>
-                          {provider.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={model.model}
-                      onChange={(e) => updateModel(index, 'model', e.target.value)}
-                      className="input flex-1"
-                    >
-                      {MODEL_OPTIONS[model.provider]?.map((modelName) => (
-                        <option key={modelName} value={modelName}>
-                          {modelName}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => removeModel(index)}
-                      disabled={modelsToTest.length === 1}
-                      className="p-2 text-gray-400 hover:text-red-600 disabled:opacity-30"
-                    >
-                      <Trash2 size={20} />
-                    </button>
+                  <div
+                    key={`${model.provider}-${model.model}-${index}`}
+                    className="border rounded-2xl border-gray-200 p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-500 uppercase tracking-wider">
+                        Model {index + 1}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeModel(index)}
+                        disabled={modelsToTest.length === 1}
+                        className="text-sm text-gray-400 hover:text-red-600 disabled:opacity-40"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <label className="text-xs font-semibold text-gray-600">Provider</label>
+                      <select
+                        value={model.provider}
+                        onChange={(e) => updateModel(index, 'provider', e.target.value)}
+                        className="input text-sm"
+                      >
+                        {LLM_PROVIDERS.map((provider) => (
+                          <option key={provider.value} value={provider.value}>
+                            {provider.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <label className="text-xs font-semibold text-gray-600">Model</label>
+                      <select
+                        value={model.model}
+                        onChange={(e) => updateModel(index, 'model', e.target.value)}
+                        className="input text-sm"
+                      >
+                        {MODEL_OPTIONS[model.provider]?.map((modelName) => (
+                          <option key={modelName} value={modelName}>
+                            {modelName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="label">Judge Provider *</label>
-                <select
-                  value={formData.judge_provider}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      judge_provider: e.target.value,
-                      judge_model: MODEL_OPTIONS[e.target.value][0],
-                    })
-                  }
-                  className="input"
-                >
-                  {LLM_PROVIDERS.map((provider) => (
-                    <option key={provider.value} value={provider.value}>
-                      {provider.label}
-                    </option>
-                  ))}
-                </select>
+            {/* Judge Settings */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Judge Model</h2>
+                  <p className="text-sm text-gray-500">
+                    This model evaluates answer quality for each response.
+                  </p>
+                </div>
+                <span className="text-xs text-gray-500">{formData.judge_provider}</span>
               </div>
-              <div>
-                <label className="label">Judge Model *</label>
-                <select
-                  value={formData.judge_model}
-                  onChange={(e) =>
-                    setFormData({ ...formData, judge_model: e.target.value })
-                  }
-                  className="input"
-                >
-                  {MODEL_OPTIONS[formData.judge_provider]?.map((model) => (
-                    <option key={model} value={model}>
-                      {model}
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Judge Provider *</label>
+                  <select
+                    value={formData.judge_provider}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        judge_provider: e.target.value,
+                        judge_model: MODEL_OPTIONS[e.target.value][0],
+                      })
+                    }
+                    className="input"
+                  >
+                    {LLM_PROVIDERS.map((provider) => (
+                      <option key={provider.value} value={provider.value}>
+                        {provider.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="label">Judge Model *</label>
+                  <select
+                    value={formData.judge_model}
+                    onChange={(e) => setFormData({ ...formData, judge_model: e.target.value })}
+                    className="input"
+                  >
+                    {MODEL_OPTIONS[formData.judge_provider]?.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
+            </section>
 
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> The evaluation will compare all selected models
-                on each question in the dataset. The judge model will evaluate and
-                score the responses.
-              </p>
-            </div>
-
-            <div className="flex gap-4 pt-4">
-              <button
-                type="button"
-                onClick={() => navigate(`/workspaces/${workspaceId}`)}
-                className="btn-secondary flex-1"
-              >
-                Cancel
-              </button>
-              <button type="submit" disabled={submitting} className="btn-primary flex-1">
-                {submitting ? 'Creating...' : 'Create & Run Evaluation'}
-              </button>
-            </div>
+            {/* Evaluation Settings */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Evaluation Settings</h2>
+                <p className="text-sm text-gray-500">
+                  Tune temperature, token limits, and retrieval sensitivity.
+                </p>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Sampling Temperature ({formData.temperature.toFixed(1)})</span>
+                    <span className="text-xs text-gray-500">0.0 - 1.0</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={formData.temperature}
+                    onChange={(e) => setFormData({ ...formData, temperature: parseFloat(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600">Max Tokens ({formData.max_tokens})</label>
+                  <input
+                    type="number"
+                    min={128}
+                    max={2048}
+                    value={formData.max_tokens}
+                    onChange={(e) => setFormData({ ...formData, max_tokens: Number(e.target.value) })}
+                    className="input mt-2"
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Top K Documents ({formData.top_k})</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={formData.top_k}
+                      onChange={(e) => setFormData({ ...formData, top_k: Number(e.target.value) })}
+                      className="input mt-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">Similarity Threshold ({formData.similarity.toFixed(2)})</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={formData.similarity}
+                      onChange={(e) => setFormData({ ...formData, similarity: parseFloat(e.target.value) })}
+                      className="w-full mt-2"
+                    />
+                  </div>
+                </div>
+              </div>
+            </section>
           </form>
+
+          {/* Summary Card */}
+          <aside className="space-y-6">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm space-y-4">
+              <div>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">Summary</p>
+                <h3 className="text-xl font-semibold text-gray-900">Evaluation Overview</h3>
+              </div>
+              <dl className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-gray-600">Dataset</dt>
+                  <dd className="font-medium text-gray-900">{datasetName}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-600">Total Questions</dt>
+                  <dd className="font-medium text-gray-900">{totalQuestions}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-600">Models</dt>
+                  <dd className="font-medium text-gray-900">{modelsToTest.length}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-gray-600">Judge</dt>
+                  <dd className="font-medium text-gray-900">{formData.judge_model}</dd>
+                </div>
+              </dl>
+              <div className="pt-4 border-t border-gray-100 space-y-3">
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Est. Cost</span>
+                  <span className="font-semibold text-gray-900">${estimatedCost.toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Est. Time</span>
+                  <span className="font-semibold text-gray-900">{estimatedTime} min</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600">
+                  <span>Questions / Model</span>
+                  <span className="font-semibold text-gray-900">{totalQuestions}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500">Configured for {modelsToTest.length} models and {formData.top_k} docs per request.</p>
+                <button
+                  onClick={() => setFormData({ ...formData })}
+                  className="w-full py-2 px-4 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium border border-blue-100"
+                >
+                  Review dataset
+                </button>
+              </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Actions</p>
+              <div className="mt-3 space-y-2">
+                <button className="w-full px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:border-gray-300 transition flex items-center justify-between">
+                  Save as draft
+                  <ArrowRight size={16} />
+                </button>
+                <button
+                  type="submit"
+                  form="evaluation-form"
+                  disabled={submitting}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition flex items-center justify-between"
+                >
+                  <span>{submitting ? 'Creating...' : 'Create & Run Evaluation'}</span>
+                  <Play size={18} />
+                </button>
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
     </Layout>

@@ -328,19 +328,18 @@ export const WorkspaceDetail: React.FC = () => {
   return (
     <Layout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <button
-            onClick={() => navigate('/workspaces')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Workspaces
-          </button>
-
-          <div className="flex justify-between items-start">
+        {/* Header Card */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{workspace.name}</h1>
+              <button
+                onClick={() => navigate('/workspaces')}
+                className="text-sm text-gray-500 mb-2 inline-flex items-center gap-2"
+              >
+                <ArrowLeft size={16} />
+                Back to Workspaces
+              </button>
+              <h1 className="text-3xl font-semibold text-gray-900">{workspace.name}</h1>
               {workspace.description && (
                 <p className="text-gray-600 mt-2">{workspace.description}</p>
               )}
@@ -352,374 +351,184 @@ export const WorkspaceDetail: React.FC = () => {
                 </span>
               </div>
             </div>
+            <div className="flex items-center gap-3">
+              <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:border-gray-300 transition flex items-center gap-2">
+                <Settings size={16} />
+                Settings
+              </button>
+              <button className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition flex items-center gap-2">
+                <Play size={16} />
+                Run Evaluation
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <div className="flex space-x-8">
+        {/* Tabbed Card */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
+          <div className="flex items-center gap-8 px-6 pt-6">
             {['documents', 'datasets', 'evaluations'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`pb-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`pb-4 text-sm font-medium transition-colors ${
                   activeTab === tab
-                    ? 'border-primary-600 text-primary-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-b-2 border-blue-500 text-blue-600'
+                    : 'border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)} ({
-                  tab === 'documents' ? documents.length :
-                  tab === 'datasets' ? datasets.length :
-                  evaluations.length
-                })
+                {tab.charAt(0).toUpperCase() + tab.slice(1)} (
+                {tab === 'documents'
+                  ? documents.length
+                  : tab === 'datasets'
+                  ? datasets.length
+                  : evaluations.length}
+                )
               </button>
             ))}
+            <div className="flex-1" />
+            <div className="px-4 py-1 rounded-xl bg-blue-50 text-blue-600 text-xs font-semibold">
+              Last updated{' '}
+              <span className="font-medium">
+                {documents.length > 0
+                  ? formatDistanceToNow(new Date(documents[0].created_at), { addSuffix: true })
+                  : 'just now'}
+              </span>
+            </div>
           </div>
-        </div>
-
-        {/* Documents Tab */}
-        {activeTab === 'documents' && (
-          <div className="space-y-4">
-            {/* Processing Progress Indicator */}
-            {documents.filter(d => d.processing_status === 'processing' || d.processing_status === 'pending').length > 0 && (
-              <div className="card bg-blue-50 border-blue-200">
-                <div className="flex items-center gap-3">
-                  <RefreshCw className="animate-spin text-blue-600" size={20} />
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-blue-900">
-                        Processing {documents.filter(d => d.processing_status === 'processing' || d.processing_status === 'pending').length} of {documents.length} documents
-                      </span>
-                      <span className="text-xs text-blue-700">
-                        {Math.round((documents.filter(d => d.processing_status === 'completed').length / documents.length) * 100)}% complete
-                      </span>
-                    </div>
-                    <div className="w-full bg-blue-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${(documents.filter(d => d.processing_status === 'completed').length / documents.length) * 100}%`
-                        }}
-                      />
-                    </div>
+          <div className="px-6 pb-6">
+            {activeTab === 'documents' && (
+              <div className="space-y-5">
+                {documents.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">No documents yet. Upload to begin.</p>
                   </div>
+                ) : (
+                  <div className="space-y-4">
+                    {documents.map((document) => (
+                      <div
+                        key={document.id}
+                        className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm flex flex-col md:flex-row justify-between gap-4"
+                      >
+                        <div>
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                              <FileText className="text-blue-500" size={24} />
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{document.filename}</h3>
+                              <p className="text-sm text-gray-500">
+                                {document.processing_status} • {document.total_chunks} chunks
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`badge ${getStatusBadge(document.processing_status)}`}>
+                            {document.processing_status}
+                          </span>
+                          <button
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition"
+                            onClick={() => handleProcessDocument(document.id)}
+                            disabled={processing === document.id}
+                          >
+                            {processing === document.id ? 'Processing...' : 'Process'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {activeTab === 'datasets' && (
+              <div className="space-y-4">
+                {datasets.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">No datasets yet. Create one to evaluate models.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {datasets.map((dataset) => (
+                      <Link
+                        key={dataset.id}
+                        to={`/datasets/${dataset.id}`}
+                        className="block bg-gray-50 rounded-2xl border border-gray-200 p-5 hover:border-blue-200 transition"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{dataset.name}</h3>
+                            <p className="text-sm text-gray-500">{dataset.total_questions} questions</p>
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {new Date(dataset.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {activeTab === 'evaluations' && (
+              <div className="space-y-4">
+                {(!evaluations || evaluations.length === 0) && (
+                  <div className="text-center py-12">
+                    <p className="text-gray-600">No evaluations yet. Schedule one to compare models.</p>
+                  </div>
+                )}
+                <div className="space-y-3">
+                  {evaluations.map((evaluation) => {
+                    if (!evaluation) return null;
+                    return (
+                      <Link
+                        key={evaluation.id}
+                        to={`/results/${evaluation.id}`}
+                        className="block bg-gray-50 rounded-2xl border border-gray-200 p-5 hover:border-blue-200 transition"
+                      >
+                        <div className="flex justify-between gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="font-semibold text-lg text-gray-900">
+                                {evaluation.name || 'Untitled Evaluation'}
+                              </h3>
+                              <span className={`badge ${getStatusBadge(evaluation.status || 'pending')}`}>
+                                {evaluation.status || 'pending'}
+                              </span>
+                            </div>
+                            {evaluation.models_to_test && evaluation.models_to_test.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-2">
+                                {evaluation.models_to_test.map((model, idx) => (
+                                  <span key={idx} className="badge badge-info text-xs">
+                                    {model.provider}: {model.model}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            <div className="text-sm text-gray-500">
+                              {evaluation.judge_provider && evaluation.judge_model && (
+                                <>
+                                  Judge: {evaluation.judge_provider} - {evaluation.judge_model}
+                                  {' • '}
+                                </>
+                              )}
+                              {evaluation.created_at
+                                ? formatDistanceToNow(new Date(evaluation.created_at), { addSuffix: true })
+                                : 'No timestamp'}
+                            </div>
+                          </div>
+                          <div className="text-right text-sm text-gray-500">
+                            {evaluation.total_questions && <div>{evaluation.total_questions} questions</div>}
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
-
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xl font-semibold">Documents</h2>
-                {documents.length > 0 && (
-                  <label className="flex items-center gap-2 text-sm cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selectedDocuments.size === documents.length && documents.length > 0}
-                      onChange={toggleSelectAll}
-                      className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <span className="text-gray-600">
-                      Select All {selectedDocuments.size > 0 && `(${selectedDocuments.size})`}
-                    </span>
-                  </label>
-                )}
-              </div>
-              <div className="flex gap-3">
-                {selectedDocuments.size > 0 && (
-                  <button
-                    onClick={handleDeleteSelected}
-                    disabled={deleting}
-                    className="btn-secondary text-red-600 hover:bg-red-50"
-                  >
-                    {deleting ? (
-                      <LoadingSpinner size="sm" />
-                    ) : (
-                      <>
-                        <Trash2 size={18} className="inline mr-2" />
-                        Delete ({selectedDocuments.size})
-                      </>
-                    )}
-                  </button>
-                )}
-                {documents.filter(d => d.processing_status === 'pending').length > 0 && (
-                  <button
-                    onClick={handleProcessAllPending}
-                    disabled={bulkProcessing}
-                    className="btn-secondary"
-                  >
-                    {bulkProcessing ? (
-                      <>
-                        <LoadingSpinner size="sm" className="inline mr-2" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <PlayCircle size={18} className="inline mr-2" />
-                        Process All Pending ({documents.filter(d => d.processing_status === 'pending').length})
-                      </>
-                    )}
-                  </button>
-                )}
-                <label className="btn-primary cursor-pointer">
-                  <Upload size={20} className="inline mr-2" />
-                  {uploading ? 'Uploading...' : 'Upload Documents'}
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.docx,.txt,.md,.markdown,.html,.htm,.csv,.xlsx,.xls,.json,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.h,.cs,.go,.rb,.php,.swift,.kt,.rs,.sql,.sh,.bash,.yaml,.yml,.xml,.css,.scss,.less"
-                    onChange={handleFileUpload}
-                    disabled={uploading}
-                    multiple
-                  />
-                </label>
-              </div>
-            </div>
-
-            {documents.length === 0 ? (
-              <div className="card text-center py-12">
-                <FileText className="mx-auto text-gray-400 mb-4" size={48} />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No documents yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Upload documents to start building your RAG index
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {documents.map((doc) => (
-                  <div key={doc.id} className="card flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedDocuments.has(doc.id)}
-                        onChange={() => toggleDocumentSelection(doc.id)}
-                        className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <FileText size={20} className="text-gray-400" />
-                          {editingDocId === doc.id ? (
-                            <div className="flex items-center gap-2 flex-1">
-                              <input
-                                type="text"
-                                value={editingFilename}
-                                onChange={(e) => setEditingFilename(e.target.value)}
-                                className="input flex-1"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') saveDocumentName(doc.id);
-                                  if (e.key === 'Escape') cancelEditingDocument();
-                                }}
-                              />
-                              <button
-                                onClick={() => saveDocumentName(doc.id)}
-                                className="p-1 text-green-600 hover:bg-green-50 rounded"
-                                title="Save"
-                              >
-                                <Check size={18} />
-                              </button>
-                              <button
-                                onClick={cancelEditingDocument}
-                                className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                                title="Cancel"
-                              >
-                                <X size={18} />
-                              </button>
-                            </div>
-                          ) : (
-                            <>
-                              <h3 className="font-semibold">{doc.filename}</h3>
-                              <button
-                                onClick={() => startEditingDocument(doc)}
-                                className="p-1 text-gray-400 hover:text-primary-600 hover:bg-gray-100 rounded"
-                                title="Edit filename"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                            </>
-                          )}
-                          <span className={`badge ${getStatusBadge(doc.processing_status)}`}>
-                            {doc.processing_status}
-                          </span>
-                        </div>
-                      <div className="flex gap-4 text-sm text-gray-600">
-                        <span>Type: {doc.file_type.toUpperCase()}</span>
-                        {doc.file_size_bytes && (
-                          <span>
-                            Size: {(doc.file_size_bytes / 1024).toFixed(0)} KB
-                          </span>
-                        )}
-                        {doc.total_chunks > 0 && (
-                          <span>Chunks: {doc.total_chunks}</span>
-                        )}
-                        <span>
-                          {formatDistanceToNow(new Date(doc.created_at), {
-                            addSuffix: true,
-                          })}
-                        </span>
-                      </div>
-                        {doc.processing_status === 'failed' && doc.error_message && (
-                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                            <strong>Error:</strong> {doc.error_message}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {doc.processing_status === 'pending' && (
-                      <button
-                        onClick={() => handleProcessDocument(doc.id)}
-                        disabled={processing === doc.id}
-                        className="btn-primary"
-                      >
-                        {processing === doc.id ? (
-                          <LoadingSpinner size="sm" />
-                        ) : (
-                          <>
-                            <PlayCircle size={18} className="inline mr-2" />
-                            Process
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
-        )}
-
-        {/* Datasets Tab */}
-        {activeTab === 'datasets' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Test Datasets</h2>
-              <Link to={`/workspaces/${id}/datasets/new`} className="btn-primary">
-                <Database size={20} className="inline mr-2" />
-                Create Dataset
-              </Link>
-            </div>
-
-            {datasets.length === 0 ? (
-              <div className="card text-center py-12">
-                <Database className="mx-auto text-gray-400 mb-4" size={48} />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No datasets yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Create test datasets to evaluate your RAG system
-                </p>
-                <Link to={`/workspaces/${id}/datasets/new`} className="btn-primary">
-                  Create Dataset
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {datasets.map((dataset) => (
-                  <Link
-                    key={dataset.id}
-                    to={`/datasets/${dataset.id}`}
-                    className="card hover:shadow-md transition-shadow block"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-lg mb-1">{dataset.name}</h3>
-                        {dataset.description && (
-                          <p className="text-gray-600 text-sm mb-2">
-                            {dataset.description}
-                          </p>
-                        )}
-                        <div className="flex gap-4 text-sm text-gray-600">
-                          <span>{dataset.total_questions} questions</span>
-                          <span>
-                            Created{' '}
-                            {formatDistanceToNow(new Date(dataset.created_at), {
-                              addSuffix: true,
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Evaluations Tab */}
-        {activeTab === 'evaluations' && (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Evaluations</h2>
-              <Link to={`/workspaces/${id}/evaluations/new`} className="btn-primary">
-                <BarChart3 size={20} className="inline mr-2" />
-                New Evaluation
-              </Link>
-            </div>
-
-            {!evaluations || evaluations.length === 0 ? (
-              <div className="card text-center py-12">
-                <BarChart3 className="mx-auto text-gray-400 mb-4" size={48} />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  No evaluations yet
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Run evaluations to compare LLM performance
-                </p>
-                <Link to={`/workspaces/${id}/evaluations/new`} className="btn-primary">
-                  New Evaluation
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {evaluations.map((evaluation) => {
-                  if (!evaluation) return null;
-                  return (
-                    <Link
-                      key={evaluation.id}
-                      to={`/results/${evaluation.id}`}
-                      className="card hover:shadow-md transition-shadow block"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{evaluation.name || 'Unnamed Evaluation'}</h3>
-                            <span className={`badge ${getStatusBadge(evaluation.status || 'pending')}`}>
-                              {evaluation.status || 'pending'}
-                            </span>
-                          </div>
-                          {evaluation.models_to_test && evaluation.models_to_test.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              {evaluation.models_to_test.map((model, idx) => (
-                                <span key={idx} className="badge badge-info">
-                                  {model.provider}: {model.model}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                          <div className="text-sm text-gray-600">
-                            {evaluation.judge_provider && evaluation.judge_model && (
-                              <>
-                                Judge: {evaluation.judge_provider} - {evaluation.judge_model}
-                                {' • '}
-                              </>
-                            )}
-                            Created{' '}
-                            {evaluation.created_at && formatDistanceToNow(new Date(evaluation.created_at), {
-                              addSuffix: true,
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+        </div>
       </div>
     </Layout>
   );

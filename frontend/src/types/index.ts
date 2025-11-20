@@ -38,6 +38,7 @@ export interface CreateWorkspaceRequest {
   embedding_provider?: string;
   chunk_size?: number;
   chunk_overlap?: number;
+  data_source?: 'manual' | 'google_drive';
 }
 
 // Document Types

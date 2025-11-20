@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Key } from 'lucide-react';
+import { Mail, Key, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
 
 export const Login: React.FC = () => {
@@ -42,29 +42,31 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 to-primary-100 px-4">
-      <div className="max-w-md w-full">
-        <div className="text-center mb-8">
-          <div className="inline-flex w-16 h-16 bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl items-center justify-center mb-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4 py-8">
+      <div className="max-w-lg w-full space-y-6">
+        <div className="text-center space-y-3">
+          <div className="inline-flex w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl items-center justify-center mx-auto shadow-lg">
             <span className="text-white font-bold text-3xl">L</span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">LLM Compare</h1>
-          <p className="text-gray-600">
-            Compare LLM performance on RAG tasks
+          <h1 className="text-3xl font-bold text-gray-900">LLM Compare</h1>
+          <p className="text-sm text-gray-600">
+            Compare LLM performance on RAG tasks with automated evaluation and insightful metrics.
           </p>
         </div>
 
         {!showApiKey ? (
-          <div className="card">
-            <h2 className="text-xl font-semibold mb-6">Get Started</h2>
-
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-5">
+            <h2 className="text-xl font-semibold text-gray-900">Create Account</h2>
+            <p className="text-sm text-gray-500">
+              Sign up with your email to receive an API key and get started.
+            </p>
             <form onSubmit={handleSignup} className="space-y-4">
-              <div>
-                <label className="label">Email Address</label>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Email Address</label>
                 <div className="relative">
                   <Mail
                     className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={20}
+                    size={18}
                   />
                   <input
                     type="email"
@@ -86,34 +88,31 @@ export const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-primary w-full"
+                className="btn-primary w-full flex items-center justify-center gap-2"
               >
                 {loading ? 'Creating Account...' : 'Create Account & Get API Key'}
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-sm text-gray-600 text-center">
-                By creating an account, you'll receive an API key that you can use
-                to access the platform.
-              </p>
+            <div className="pt-4 border-t border-gray-100 text-xs text-gray-500">
+              By signing up you agree to the platform terms and will receive an API key via email.
             </div>
           </div>
         ) : (
-          <div className="card">
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-5">
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                 <Key className="text-green-600" size={24} />
               </div>
-              <h2 className="text-xl font-semibold mb-2">Account Created!</h2>
-              <p className="text-gray-600">
-                Save your API key - you won't be able to see it again
+              <h2 className="text-xl font-semibold text-gray-900">Account Created!</h2>
+              <p className="text-sm text-gray-600">
+                Save this API key — it&apos;s only displayed once.
               </p>
             </div>
 
-            <div className="mb-6">
-              <label className="label">Your API Key</label>
-              <div className="flex gap-2">
+            <div>
+              <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Your API Key</label>
+              <div className="mt-2 flex gap-2">
                 <input
                   type="text"
                   value={apiKey}
@@ -122,22 +121,23 @@ export const Login: React.FC = () => {
                 />
                 <button
                   onClick={handleCopyApiKey}
-                  className="btn-secondary whitespace-nowrap"
+                  className="btn-secondary whitespace-nowrap text-sm"
                 >
                   Copy
                 </button>
               </div>
             </div>
 
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-6">
-              <p className="text-sm text-yellow-800">
-                <strong>Important:</strong> Store this API key securely. You'll need it
-                to authenticate API requests.
-              </p>
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+              <strong>Important:</strong> Store this key securely, it&apos;s required for API calls.
             </div>
 
-            <button onClick={handleContinue} className="btn-primary w-full">
+            <button
+              onClick={handleContinue}
+              className="btn-primary w-full flex items-center justify-center gap-2"
+            >
               Continue to Dashboard
+              <ArrowRight size={16} />
             </button>
           </div>
         )}
