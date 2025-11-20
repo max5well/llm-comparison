@@ -1,5 +1,5 @@
-from sqlalchemy import Column, String, Integer, Boolean, TIMESTAMP, Text, DECIMAL, BIGINT, ForeignKey, ARRAY
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import Column, String, Integer, Boolean, TIMESTAMP, Text, DECIMAL, BIGINT, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID, JSON
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
 import uuid
@@ -63,7 +63,7 @@ class Chunk(Base):
     content = Column(Text, nullable=False)
     token_count = Column(Integer)
     vector_id = Column(String(255), index=True)
-    metadata = Column(JSONB)
+    chunk_item_metadata = Column(JSON)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
@@ -89,7 +89,7 @@ class TestQuestion(Base):
     question = Column(Text, nullable=False)
     expected_answer = Column(Text)
     context = Column(Text)
-    metadata = Column(JSONB)
+    item_metadata = Column(JSON)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
@@ -101,7 +101,7 @@ class Evaluation(Base):
     dataset_id = Column(UUID(as_uuid=True), ForeignKey("test_datasets.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
-    models_tested = Column(ARRAY(Text))
+    models_tested = Column(JSON)
     judge_model = Column(String(100))
     judge_provider = Column(String(50))
     status = Column(String(50), default="pending", index=True)
@@ -124,14 +124,14 @@ class ModelResult(Base):
     model_name = Column(String(100), nullable=False, index=True)
     provider = Column(String(50), nullable=False)
     answer = Column(Text, nullable=False)
-    retrieved_chunks = Column(JSONB)
+    retrieved_chunks = Column(JSON)
     prompt_used = Column(Text)
     tokens_in = Column(Integer)
     tokens_out = Column(Integer)
     latency_ms = Column(Integer)
     cost_usd = Column(DECIMAL(10, 6))
     error_message = Column(Text)
-    metadata = Column(JSONB)
+    item_metadata = Column(JSON)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
@@ -152,7 +152,21 @@ class JudgeResult(Base):
     judge_prompt = Column(Text)
     judge_response = Column(Text)
     confidence = Column(DECIMAL(4, 2))
-    criteria_scores = Column(JSONB)
+    criteria_scores = Column(JSON)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+
+
+class UserJudgment(Base):
+    __tablename__ = "user_judgments"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id = Column(UUID(as_uuid=True), ForeignKey("evaluations.id", ondelete="CASCADE"), nullable=False, index=True)
+    question_id = Column(UUID(as_uuid=True), ForeignKey("test_questions.id", ondelete="CASCADE"), nullable=False, index=True)
+    model_a_result_id = Column(UUID(as_uuid=True), ForeignKey("model_results.id", ondelete="CASCADE"), nullable=False)
+    model_b_result_id = Column(UUID(as_uuid=True), ForeignKey("model_results.id", ondelete="CASCADE"), nullable=False)
+    winner = Column(String(50), index=True)  # 'model_a', 'model_b', 'tie', 'both_bad'
+    user_preferred_answer = Column(Text)
+    feedback_notes = Column(Text)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
@@ -171,6 +185,18 @@ class EvaluationMetrics(Base):
     tie_rate = Column(DECIMAL(5, 2))
     loss_rate = Column(DECIMAL(5, 2))
     avg_score = Column(DECIMAL(4, 2))
-    metrics_breakdown = Column(JSONB)
+    metrics_breakdown = Column(JSON)
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class ProviderAPIKey(Base):
+    __tablename__ = "provider_api_keys"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    provider = Column(String(50), nullable=False)  # openai, anthropic, mistral, etc.
+    api_key_encrypted = Column(Text, nullable=False)  # Encrypted API key
+    is_active = Column(Boolean, default=True)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())

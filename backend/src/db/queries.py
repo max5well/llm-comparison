@@ -95,6 +95,29 @@ def update_document_status(db: Session, document_id: UUID, status: str,
     return document
 
 
+def delete_document(db: Session, document_id: UUID) -> bool:
+    """Delete a document and all associated chunks."""
+    import os
+    document = get_document(db, document_id)
+    if not document:
+        return False
+
+    # Delete associated chunks first
+    db.query(Chunk).filter(Chunk.document_id == document_id).delete()
+
+    # Delete the file from disk if it exists
+    if document.file_path and os.path.exists(document.file_path):
+        try:
+            os.remove(document.file_path)
+        except Exception as e:
+            print(f"Warning: Could not delete file {document.file_path}: {e}")
+
+    # Delete the document record
+    db.delete(document)
+    db.commit()
+    return True
+
+
 # Chunk queries
 def create_chunk(db: Session, document_id: UUID, workspace_id: UUID, chunk_index: int,
                 content: str, **kwargs) -> Chunk:
@@ -267,3 +290,71 @@ def get_evaluation_metrics(db: Session, evaluation_id: UUID) -> List[EvaluationM
     return db.query(EvaluationMetrics).filter(
         EvaluationMetrics.evaluation_id == evaluation_id
     ).all()
+
+
+# API Key Management
+def set_provider_api_key(db: Session, user_id: UUID, provider: str, encrypted_key: str):
+    """Set or update an API key for a provider."""
+    from src.db.models import ProviderAPIKey
+
+    # Check if key already exists
+    existing = db.query(ProviderAPIKey).filter(
+        ProviderAPIKey.user_id == user_id,
+        ProviderAPIKey.provider == provider
+    ).first()
+
+    if existing:
+        # Update existing key
+        existing.api_key_encrypted = encrypted_key
+        existing.is_active = True
+        db.commit()
+        db.refresh(existing)
+        return existing
+    else:
+        # Create new key
+        new_key = ProviderAPIKey(
+            user_id=user_id,
+            provider=provider,
+            api_key_encrypted=encrypted_key
+        )
+        db.add(new_key)
+        db.commit()
+        db.refresh(new_key)
+        return new_key
+
+
+def get_provider_api_key(db: Session, user_id: UUID, provider: str):
+    """Get an API key for a provider."""
+    from src.db.models import ProviderAPIKey
+
+    return db.query(ProviderAPIKey).filter(
+        ProviderAPIKey.user_id == user_id,
+        ProviderAPIKey.provider == provider,
+        ProviderAPIKey.is_active == True
+    ).first()
+
+
+def get_all_user_api_keys(db: Session, user_id: UUID):
+    """Get all API keys for a user."""
+    from src.db.models import ProviderAPIKey
+
+    return db.query(ProviderAPIKey).filter(
+        ProviderAPIKey.user_id == user_id,
+        ProviderAPIKey.is_active == True
+    ).all()
+
+
+def delete_provider_api_key(db: Session, user_id: UUID, provider: str):
+    """Delete an API key for a provider."""
+    from src.db.models import ProviderAPIKey
+
+    key = db.query(ProviderAPIKey).filter(
+        ProviderAPIKey.user_id == user_id,
+        ProviderAPIKey.provider == provider
+    ).first()
+
+    if key:
+        db.delete(key)
+        db.commit()
+        return True
+    return False

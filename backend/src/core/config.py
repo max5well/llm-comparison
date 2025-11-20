@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     mistral_api_key: Optional[str] = None
     together_api_key: Optional[str] = None
+    huggingface_api_key: Optional[str] = None
 
     # Embedding Provider Keys
     voyage_api_key: Optional[str] = None

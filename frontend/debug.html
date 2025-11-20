@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Frontend Debug</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Frontend Diagnostic Tool</h1>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+
+        async function runTests() {
+            let html = '<h2>Test Results:</h2>';
+
+            // Test 1: Check main page loads
+            try {
+                const response = await fetch('http://localhost:3000');
+                const text = await response.text();
+                html += `<p class="success">✓ Frontend server responding</p>`;
+                html += `<p class="${text.includes('root') ? 'success' : 'error'}">
+                    ${text.includes('root') ? '✓' : '✗'} Root div exists in HTML
+                </p>`;
+            } catch (e) {
+                html += `<p class="error">✗ Frontend server not responding: ${e.message}</p>`;
+            }
+
+            // Test 2: Check backend
+            try {
+                const response = await fetch('http://localhost:8001/health');
+                const data = await response.json();
+                html += `<p class="success">✓ Backend is healthy</p>`;
+            } catch (e) {
+                html += `<p class="error">✗ Backend not responding: ${e.message}</p>`;
+            }
+
+            results.innerHTML = html;
+
+            html += '<h2>Next Steps:</h2>';
+            html += '<ol>';
+            html += '<li>Open <a href="http://localhost:3000" target="_blank">http://localhost:3000</a> in a new tab</li>';
+            html += '<li>Open Developer Tools (F12 or Right-click → Inspect)</li>';
+            html += '<li>Go to the <strong>Console</strong> tab</li>';
+            html += '<li>Look for any red error messages</li>';
+            html += '<li>Share the error message with me</li>';
+            html += '</ol>';
+
+            results.innerHTML = html;
+        }
+
+        runTests();
+    </script>
+</body>
+</html>

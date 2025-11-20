@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        accent: '#60A5FA',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>::-webkit-scrollbar { display: none;}</style>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900">
+
+<header id="header" class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+    <nav class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-chart-line text-white text-sm"></i>
+            </div>
+            <span class="text-xl font-semibold">LLM Compare</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+            <a href="#features" class="text-sm text-gray-600 hover:text-gray-900 transition">Features</a>
+            <a href="#how-it-works" class="text-sm text-gray-600 hover:text-gray-900 transition">How It Works</a>
+            <a href="#testimonials" class="text-sm text-gray-600 hover:text-gray-900 transition">Testimonials</a>
+            <a href="#pricing" class="text-sm text-gray-600 hover:text-gray-900 transition">Pricing</a>
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="#login" class="text-sm text-gray-600 hover:text-gray-900 transition">Login</a>
+            <a href="#signup" class="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition">Get Started</a>
+        </div>
+    </nav>
+</header>
+
+<main id="main-content" class="pt-20 min-h-screen flex items-center justify-center">
+    <div class="absolute inset-0 overflow-hidden">
+        <div class="absolute top-20 left-10 w-72 h-72 bg-blue-200 rounded-full blur-3xl opacity-20"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-200 rounded-full blur-3xl opacity-20"></div>
+    </div>
+
+    <div class="relative w-full max-w-6xl mx-auto px-6 py-12">
+        <div class="grid lg:grid-cols-2 gap-16 items-center">
+            
+            <div id="signup-illustration" class="hidden lg:block">
+                <div class="relative">
+                    <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-12 border border-gray-200">
+                        <div class="space-y-8">
+                            <div class="text-center">
+                                <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl mx-auto mb-6 flex items-center justify-center">
+                                    <i class="fa-solid fa-rocket text-white text-2xl"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold text-gray-900 mb-4">Start Evaluating LLMs</h3>
+                                <p class="text-gray-600 leading-relaxed">Join thousands of AI teams using LLM Compare to make data-driven model decisions.</p>
+                            </div>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4 p-4 bg-white rounded-xl border border-gray-200">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-upload text-blue-500"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">Upload Your Data</div>
+                                        <div class="text-sm text-gray-600">26+ file types supported</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4 p-4 bg-white rounded-xl border border-gray-200">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-brain text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">Compare Models</div>
+                                        <div class="text-sm text-gray-600">1000+ LLMs available</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center space-x-4 p-4 bg-white rounded-xl border border-gray-200">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-chart-bar text-green-500"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-900">Get Insights</div>
+                                        <div class="text-sm text-gray-600">Detailed analytics & reports</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="signup-form-container" class="w-full max-w-md mx-auto lg:mx-0">
+                <div class="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
+                    <div class="text-center mb-8">
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
+                        <p class="text-gray-600">Start comparing LLMs on your data</p>
+                    </div>
+
+                    <form id="signup-form" class="space-y-6">
+                        <div id="email-field">
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-envelope text-gray-400"></i>
+                                </div>
+                                <input type="email" id="email" name="email" required 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                       placeholder="Enter your email">
+                            </div>
+                        </div>
+
+                        <div id="password-field">
+                            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-lock text-gray-400"></i>
+                                </div>
+                                <input type="password" id="password" name="password" required 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                       placeholder="Create a password">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Must be at least 8 characters long</p>
+                        </div>
+
+                        <div id="company-field">
+                            <label for="company" class="block text-sm font-medium text-gray-700 mb-2">Company <span class="text-gray-400">(Optional)</span></label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fa-solid fa-building text-gray-400"></i>
+                                </div>
+                                <input type="text" id="company" name="company" 
+                                       class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                                       placeholder="Your company name">
+                            </div>
+                        </div>
+
+                        <div id="terms-checkbox" class="flex items-start space-x-3">
+                            <input type="checkbox" id="terms" name="terms" required 
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1">
+                            <label for="terms" class="text-sm text-gray-600 leading-relaxed">
+                                I agree to the <a href="#terms" class="text-blue-600 hover:text-blue-700">Terms of Service</a> and 
+                                <a href="#privacy" class="text-blue-600 hover:text-blue-700">Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <button type="submit" id="signup-button" 
+                                class="w-full bg-blue-500 text-white font-medium py-3 px-4 rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition">
+                            Create Account
+                            <i class="fa-solid fa-arrow-right ml-2"></i>
+                        </button>
+                    </form>
+
+                    <div id="divider" class="relative my-8">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 bg-white text-gray-500">Or continue with</span>
+                        </div>
+                    </div>
+
+                    <div id="social-login" class="grid grid-cols-2 gap-3">
+                        <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition">
+                            <i class="fa-brands fa-google text-red-500 mr-2"></i>
+                            <span class="text-sm font-medium text-gray-700">Google</span>
+                        </button>
+                        <button class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition">
+                            <i class="fa-brands fa-github text-gray-900 mr-2"></i>
+                            <span class="text-sm font-medium text-gray-700">GitHub</span>
+                        </button>
+                    </div>
+
+                    <div id="login-link" class="text-center mt-8">
+                        <p class="text-sm text-gray-600">
+                            Already have an account? 
+                            <a href="#login" class="text-blue-600 hover:text-blue-700 font-medium">Sign in</a>
+                        </p>
+                    </div>
+                </div>
+
+                <div id="security-notice" class="mt-6 text-center">
+                    <div class="inline-flex items-center space-x-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                        <i class="fa-solid fa-shield-halved text-green-500"></i>
+                        <span class="text-sm text-green-700 font-medium">GDPR Compliant & Enterprise Secure</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer id="footer" class="bg-gray-900 text-gray-300 py-16">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="grid md:grid-cols-4 gap-12 mb-12">
+            <div>
+                <div class="flex items-center space-x-2 mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-chart-line text-white text-sm"></i>
+                    </div>
+                    <span class="text-xl font-semibold text-white">LLM Compare</span>
+                </div>
+                <p class="text-sm text-gray-400 leading-relaxed">Enterprise-grade LLM evaluation platform for data-driven decisions.</p>
+            </div>
+            
+            <div>
+                <h4 class="text-white font-semibold mb-4">Product</h4>
+                <ul class="space-y-2">
+                    <li><a href="#features" class="text-sm hover:text-white transition">Features</a></li>
+                    <li><a href="#pricing" class="text-sm hover:text-white transition">Pricing</a></li>
+                    <li><a href="#demo" class="text-sm hover:text-white transition">Demo</a></li>
+                    <li><a href="#docs" class="text-sm hover:text-white transition">Documentation</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4 class="text-white font-semibold mb-4">Company</h4>
+                <ul class="space-y-2">
+                    <li><a href="#about" class="text-sm hover:text-white transition">About</a></li>
+                    <li><a href="#blog" class="text-sm hover:text-white transition">Blog</a></li>
+                    <li><a href="#careers" class="text-sm hover:text-white transition">Careers</a></li>
+                    <li><a href="#contact" class="text-sm hover:text-white transition">Contact</a></li>
+                </ul>
+            </div>
+            
+            <div>
+                <h4 class="text-white font-semibold mb-4">Legal</h4>
+                <ul class="space-y-2">
+                    <li><a href="#privacy" class="text-sm hover:text-white transition">Privacy Policy</a></li>
+                    <li><a href="#terms" class="text-sm hover:text-white transition">Terms of Service</a></li>
+                    <li><a href="#imprint" class="text-sm hover:text-white transition">Imprint</a></li>
+                    <li><a href="#gdpr" class="text-sm hover:text-white transition">GDPR</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between">
+            <p class="text-sm text-gray-400 mb-4 md:mb-0">© 2024 LLM Compare. All rights reserved.</p>
+            <div class="flex items-center space-x-6">
+                <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-linkedin"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white transition"><i class="fa-brands fa-github"></i></a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+document.getElementById('signup-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const company = document.getElementById('company').value;
+    const terms = document.getElementById('terms').checked;
+    
+    if (!terms) {
+        alert('Please agree to the Terms of Service and Privacy Policy');
+        return;
+    }
+    
+    if (password.length < 8) {
+        alert('Password must be at least 8 characters long');
+        return;
+    }
+    
+    const button = document.getElementById('signup-button');
+    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Creating Account...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        alert('Account created successfully! Welcome to LLM Compare.');
+        button.innerHTML = 'Create Account <i class="fa-solid fa-arrow-right ml-2"></i>';
+        button.disabled = false;
+    }, 2000);
+});
+</script>
+
+</body>
+</html>

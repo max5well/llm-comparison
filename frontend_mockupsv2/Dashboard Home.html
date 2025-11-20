@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        accent: '#60A5FA',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>::-webkit-scrollbar { display: none;}</style>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900">
+
+<header id="header" class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200">
+    <nav class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-chart-line text-white text-sm"></i>
+            </div>
+            <span class="text-xl font-semibold">LLM Compare</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+            <a href="#home" class="text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">Home</a>
+            <a href="#workspaces" class="text-sm text-gray-600 hover:text-gray-900 transition">Workspaces</a>
+            <a href="#results" class="text-sm text-gray-600 hover:text-gray-900 transition">Results</a>
+            <a href="#settings" class="text-sm text-gray-600 hover:text-gray-900 transition">Settings</a>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button class="relative p-2 text-gray-600 hover:text-gray-900 transition">
+                <i class="fa-solid fa-bell"></i>
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+            </button>
+            <div class="flex items-center space-x-3">
+                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-3.jpg" alt="Profile" class="w-8 h-8 rounded-full object-cover">
+                <span class="text-sm font-medium">Alex Chen</span>
+                <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main id="dashboard-main" class="pt-20 min-h-screen">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        
+        <section id="welcome-section" class="mb-8">
+            <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 border border-gray-200">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">Welcome back, Alex! 👋</h1>
+                        <p class="text-lg text-gray-600 mb-6">Ready to evaluate LLMs on your data? Create a new workspace or continue with existing ones.</p>
+                        <div class="flex items-center space-x-4">
+                            <button class="px-6 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition shadow-lg">
+                                <i class="fa-solid fa-plus mr-2"></i>
+                                Create Workspace
+                            </button>
+                            <button class="px-6 py-3 bg-white text-gray-700 font-medium rounded-xl border border-gray-200 hover:border-gray-300 transition">
+                                <i class="fa-solid fa-play mr-2"></i>
+                                Quick Tour
+                            </button>
+                        </div>
+                    </div>
+                    <div class="hidden lg:block">
+                        <div class="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl flex items-center justify-center">
+                            <i class="fa-solid fa-rocket text-white text-4xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="quick-actions" class="mb-8">
+            <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div id="action-create" class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition cursor-pointer">
+                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-folder-plus text-blue-500 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Create New Workspace</h3>
+                    <p class="text-gray-600 text-sm mb-4">Upload documents and set up a new RAG evaluation workspace</p>
+                    <div class="flex items-center text-blue-500 text-sm font-medium">
+                        Start Creating <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </div>
+                </div>
+                
+                <div id="action-connect" class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition cursor-pointer">
+                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fa-brands fa-google-drive text-green-500 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">Connect Google Drive</h3>
+                    <p class="text-gray-600 text-sm mb-4">Import documents directly from your Google Drive account</p>
+                    <div class="flex items-center text-green-500 text-sm font-medium">
+                        Connect Now <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </div>
+                </div>
+                
+                <div id="action-results" class="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition cursor-pointer">
+                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                        <i class="fa-solid fa-chart-bar text-purple-500 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">View Latest Results</h3>
+                    <p class="text-gray-600 text-sm mb-4">Check your most recent LLM comparison evaluations</p>
+                    <div class="flex items-center text-purple-500 text-sm font-medium">
+                        View Results <i class="fa-solid fa-arrow-right ml-2"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <section id="recent-workspaces" class="mb-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold">Recent Workspaces</h2>
+                        <a href="#workspaces" class="text-sm text-blue-500 hover:text-blue-600 font-medium">View All</a>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div id="workspace-1" class="bg-white rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-folder text-blue-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold">Customer Support Knowledge Base</h3>
+                                        <p class="text-sm text-gray-500">Updated 2 hours ago</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Active</span>
+                            </div>
+                            <div class="flex items-center space-x-6 text-sm text-gray-600">
+                                <span><i class="fa-solid fa-file mr-1"></i> 24 documents</span>
+                                <span><i class="fa-solid fa-database mr-1"></i> 3 datasets</span>
+                                <span><i class="fa-solid fa-chart-line mr-1"></i> 5 evaluations</span>
+                            </div>
+                        </div>
+                        
+                        <div id="workspace-2" class="bg-white rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-folder text-purple-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold">Product Documentation</h3>
+                                        <p class="text-sm text-gray-500">Updated 1 day ago</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">Processing</span>
+                            </div>
+                            <div class="flex items-center space-x-6 text-sm text-gray-600">
+                                <span><i class="fa-solid fa-file mr-1"></i> 18 documents</span>
+                                <span><i class="fa-solid fa-database mr-1"></i> 2 datasets</span>
+                                <span><i class="fa-solid fa-chart-line mr-1"></i> 3 evaluations</span>
+                            </div>
+                        </div>
+                        
+                        <div id="workspace-3" class="bg-white rounded-xl p-6 border border-gray-200 hover:border-gray-300 transition">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-folder text-green-500"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold">Legal Documents Analysis</h3>
+                                        <p class="text-sm text-gray-500">Updated 3 days ago</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">Completed</span>
+                            </div>
+                            <div class="flex items-center space-x-6 text-sm text-gray-600">
+                                <span><i class="fa-solid fa-file mr-1"></i> 12 documents</span>
+                                <span><i class="fa-solid fa-database mr-1"></i> 1 dataset</span>
+                                <span><i class="fa-solid fa-chart-line mr-1"></i> 2 evaluations</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            
+            <div class="lg:col-span-1">
+                <section id="platform-stats" class="mb-8">
+                    <h2 class="text-xl font-semibold mb-4">Platform Overview</h2>
+                    
+                    <div class="space-y-4">
+                        <div id="stats-models" class="bg-white rounded-xl p-6 border border-gray-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900">Available Models</h3>
+                                <i class="fa-solid fa-brain text-blue-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-blue-600 mb-1">1,247</p>
+                            <p class="text-sm text-gray-500">LLM models supported</p>
+                        </div>
+                        
+                        <div id="stats-embeddings" class="bg-white rounded-xl p-6 border border-gray-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900">Embedding Models</h3>
+                                <i class="fa-solid fa-layer-group text-purple-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-purple-600 mb-1">156</p>
+                            <p class="text-sm text-gray-500">Embedding options</p>
+                        </div>
+                        
+                        <div id="stats-formats" class="bg-white rounded-xl p-6 border border-gray-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900">File Formats</h3>
+                                <i class="fa-solid fa-file-lines text-green-500"></i>
+                            </div>
+                            <p class="text-3xl font-bold text-green-600 mb-1">26+</p>
+                            <p class="text-sm text-gray-500">Supported formats</p>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="recent-activity">
+                    <h2 class="text-xl font-semibold mb-4">Recent Activity</h2>
+                    
+                    <div class="bg-white rounded-xl p-6 border border-gray-200">
+                        <div class="space-y-4">
+                            <div id="activity-1" class="flex items-start space-x-3">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <i class="fa-solid fa-plus text-blue-500 text-xs"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-900">Created new workspace "Customer Support KB"</p>
+                                    <p class="text-xs text-gray-500">2 hours ago</p>
+                                </div>
+                            </div>
+                            
+                            <div id="activity-2" class="flex items-start space-x-3">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <i class="fa-solid fa-check text-green-500 text-xs"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-900">Evaluation completed for "Legal Documents"</p>
+                                    <p class="text-xs text-gray-500">1 day ago</p>
+                                </div>
+                            </div>
+                            
+                            <div id="activity-3" class="flex items-start space-x-3">
+                                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <i class="fa-solid fa-upload text-purple-500 text-xs"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-900">Uploaded 12 documents to workspace</p>
+                                    <p class="text-xs text-gray-500">2 days ago</p>
+                                </div>
+                            </div>
+                            
+                            <div id="activity-4" class="flex items-start space-x-3">
+                                <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                                    <i class="fa-solid fa-cog text-orange-500 text-xs"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-900">Updated embedding settings</p>
+                                    <p class="text-xs text-gray-500">3 days ago</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <a href="#activity" class="text-sm text-blue-500 hover:text-blue-600 font-medium">View all activity</a>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

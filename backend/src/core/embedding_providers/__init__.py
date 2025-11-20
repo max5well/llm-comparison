@@ -1,9 +1,10 @@
 from typing import Dict, Type
 from .base_embedding import BaseEmbeddingProvider, EmbeddingProvider, EmbeddingResponse
 from .openai_embedding import OpenAIEmbeddingProvider
-from .voyage_embedding import VoyageEmbeddingProvider
-from .cohere_embedding import CohereEmbeddingProvider
 from .bge_embedding import BGEEmbeddingProvider
+# Temporarily disabled - uncomment when you have API keys
+# from .voyage_embedding import VoyageEmbeddingProvider
+# from .cohere_embedding import CohereEmbeddingProvider
 from src.core.config import settings
 
 
@@ -12,9 +13,10 @@ class EmbeddingProviderFactory:
 
     _providers: Dict[str, Type[BaseEmbeddingProvider]] = {
         EmbeddingProvider.OPENAI: OpenAIEmbeddingProvider,
-        EmbeddingProvider.VOYAGE: VoyageEmbeddingProvider,
-        EmbeddingProvider.COHERE: CohereEmbeddingProvider,
         EmbeddingProvider.BGE: BGEEmbeddingProvider,
+        # Temporarily disabled - uncomment when you have API keys
+        # EmbeddingProvider.VOYAGE: VoyageEmbeddingProvider,
+        # EmbeddingProvider.COHERE: CohereEmbeddingProvider,
     }
 
     @classmethod
@@ -54,12 +56,23 @@ class EmbeddingProviderFactory:
     @staticmethod
     def _get_api_key_from_settings(provider: str) -> str:
         """Get API key from settings based on provider name."""
+        import logging
+        logger = logging.getLogger(__name__)
+
         key_mapping = {
             EmbeddingProvider.OPENAI: settings.openai_api_key,
             EmbeddingProvider.VOYAGE: settings.voyage_api_key,
             EmbeddingProvider.COHERE: settings.cohere_api_key,
         }
-        return key_mapping.get(provider)
+        api_key = key_mapping.get(provider)
+
+        # Debug logging to see what key we're getting
+        if api_key:
+            logger.info(f"Got API key for {provider}: {api_key[:10]}... (length: {len(api_key)})")
+        else:
+            logger.warning(f"No API key found for {provider} in settings")
+
+        return api_key
 
     @classmethod
     def get_available_providers(cls) -> list[str]:

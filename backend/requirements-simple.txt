@@ -1,0 +1,43 @@
+# Core FastAPI
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart
+
+# Database
+sqlalchemy>=2.0.0
+alembic
+
+# LLM Providers
+openai>=1.0.0
+anthropic>=0.18.0
+
+# Document processing
+pypdf2
+python-docx
+pdfplumber
+
+# Vector store
+chromadb
+
+# Utilities
+python-dotenv
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+requests
+tenacity
+
+# Auth
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+
+# Text processing
+tiktoken
+
+# Optional providers (install if needed)
+# mistralai
+# together
+# voyageai
+# cohere
+# redis
+# sentence-transformers

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        accent: '#60A5FA',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>::-webkit-scrollbar { display: none;}</style>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900">
+
+<header id="header" class="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
+    <nav class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-8">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fa-solid fa-chart-line text-white text-sm"></i>
+                </div>
+                <span class="text-xl font-semibold">LLM Compare</span>
+            </div>
+            <div class="hidden md:flex items-center space-x-1">
+                <a href="#home" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition">Home</a>
+                <a href="#workspaces" class="px-4 py-2 text-sm text-blue-600 bg-blue-50 rounded-lg font-medium">Workspaces</a>
+                <a href="#results" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition">Results</a>
+                <a href="#settings" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition">Settings</a>
+            </div>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button class="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                <i class="fa-solid fa-bell"></i>
+            </button>
+            <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="User" class="w-10 h-10 rounded-full object-cover cursor-pointer">
+        </div>
+    </nav>
+</header>
+
+<main id="main-content" class="pt-20">
+    <div class="max-w-5xl mx-auto px-6 py-12">
+        <div id="wizard-header" class="mb-12">
+            <button class="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6 transition">
+                <i class="fa-solid fa-arrow-left"></i>
+                <span class="text-sm font-medium">Back to Workspaces</span>
+            </button>
+            <h1 class="text-3xl font-bold mb-2">Create New Workspace</h1>
+            <p class="text-gray-600">Set up your RAG workspace in three simple steps</p>
+        </div>
+
+        <div id="progress-indicator" class="mb-12">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-3 flex-1">
+                    <div class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold text-sm shadow-lg shadow-blue-500/30">1</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-semibold text-blue-600">Data Source</div>
+                        <div class="text-xs text-gray-500">Connect or upload files</div>
+                    </div>
+                </div>
+                <div class="w-16 h-0.5 bg-gray-300 mx-2"></div>
+                <div class="flex items-center space-x-3 flex-1">
+                    <div class="w-10 h-10 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center font-semibold text-sm">2</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-medium text-gray-400">Chunking Settings</div>
+                        <div class="text-xs text-gray-400">Configure embedding</div>
+                    </div>
+                </div>
+                <div class="w-16 h-0.5 bg-gray-300 mx-2"></div>
+                <div class="flex items-center space-x-3 flex-1">
+                    <div class="w-10 h-10 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center font-semibold text-sm">3</div>
+                    <div class="flex-1">
+                        <div class="text-sm font-medium text-gray-400">Review & Create</div>
+                        <div class="text-xs text-gray-400">Confirm workspace</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="step-1-content" class="bg-white rounded-2xl border border-gray-200 p-8 mb-8">
+            <div class="mb-8">
+                <h2 class="text-xl font-semibold mb-2">Select Data Source</h2>
+                <p class="text-gray-600 text-sm">Choose how you want to add documents to your workspace</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div id="google-drive-card" class="relative group cursor-pointer">
+                    <input type="radio" name="data-source" id="google-drive" class="peer sr-only">
+                    <label for="google-drive" class="block">
+                        <div class="border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50/50 rounded-2xl p-8 hover:border-gray-300 transition h-full">
+                            <div class="flex flex-col items-center text-center h-full justify-between">
+                                <div>
+                                    <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg">
+                                        <i class="fa-brands fa-google-drive text-white text-2xl"></i>
+                                    </div>
+                                    <h3 class="text-lg font-semibold mb-3">Connect Google Drive</h3>
+                                    <p class="text-sm text-gray-600 leading-relaxed mb-6">Seamlessly access files from your Google Drive. Automatic sync and updates.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2 justify-center">
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Auto-sync</span>
+                                    <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">Secure OAuth</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="upload-files-card" class="relative group cursor-pointer">
+                    <input type="radio" name="data-source" id="upload-files" class="peer sr-only" checked>
+                    <label for="upload-files" class="block">
+                        <div class="border-2 border-blue-500 bg-blue-50/50 rounded-2xl p-8 hover:border-blue-600 transition h-full">
+                            <div class="flex flex-col items-center text-center h-full justify-between">
+                                <div>
+                                    <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-lg">
+                                        <i class="fa-solid fa-cloud-arrow-up text-white text-2xl"></i>
+                                    </div>
+                                    <h3 class="text-lg font-semibold mb-3">Upload Files</h3>
+                                    <p class="text-sm text-gray-600 leading-relaxed mb-6">Upload documents directly from your computer. Drag and drop support.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2 justify-center">
+                                    <span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">26+ formats</span>
+                                    <span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full">Batch upload</span>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="upload-area" class="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center hover:border-blue-400 hover:bg-blue-50/30 transition cursor-pointer">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <i class="fa-solid fa-file-arrow-up text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Drop files here or click to browse</h3>
+                <p class="text-sm text-gray-600 mb-4">Supported formats: PDF, DOCX, TXT, XLSX, CSV, JSON, MD, and more</p>
+                <div class="flex items-center justify-center space-x-2 text-xs text-gray-500">
+                    <i class="fa-solid fa-shield-halved text-green-500"></i>
+                    <span>Your files are encrypted and GDPR-compliant</span>
+                </div>
+            </div>
+
+            <div id="supported-formats" class="mt-8 p-6 bg-gray-50 rounded-xl">
+                <div class="flex items-start space-x-3">
+                    <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                    <div>
+                        <h4 class="text-sm font-semibold mb-2">Supported File Types</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.pdf</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.docx</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.txt</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.xlsx</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.csv</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.json</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.md</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.py</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.js</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">.html</span>
+                            <span class="px-2 py-1 bg-white border border-gray-200 rounded text-xs">+16 more</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="wizard-actions" class="flex items-center justify-between">
+            <button class="px-6 py-3 text-gray-600 hover:text-gray-900 font-medium rounded-xl hover:bg-gray-100 transition">
+                <i class="fa-solid fa-arrow-left mr-2"></i>
+                Cancel
+            </button>
+            <button id="next-step-btn" class="px-8 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition shadow-lg shadow-blue-500/30">
+                Continue to Settings
+                <i class="fa-solid fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+</main>
+
+<script>
+window.addEventListener('load', function() {
+    const uploadArea = document.getElementById('upload-area');
+    const nextBtn = document.getElementById('next-step-btn');
+    const googleDriveCard = document.getElementById('google-drive-card');
+    const uploadFilesCard = document.getElementById('upload-files-card');
+    
+    uploadArea.addEventListener('click', function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = '.pdf,.docx,.txt,.xlsx,.csv,.json,.md,.py,.js,.html';
+        input.click();
+        
+        input.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                uploadArea.innerHTML = `
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                        <i class="fa-solid fa-check text-green-500 text-2xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">${e.target.files.length} file(s) selected</h3>
+                    <p class="text-sm text-gray-600 mb-4">Click to add more files or continue to next step</p>
+                `;
+            }
+        });
+    });
+    
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('border-blue-500', 'bg-blue-50');
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            uploadArea.innerHTML = `
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 mx-auto">
+                    <i class="fa-solid fa-check text-green-500 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">${files.length} file(s) uploaded</h3>
+                <p class="text-sm text-gray-600 mb-4">Click to add more files or continue to next step</p>
+            `;
+        }
+    });
+    
+    nextBtn.addEventListener('click', function() {
+        window.location.href = '#step-2';
+    });
+});
+</script>
+
+</body>
+</html>

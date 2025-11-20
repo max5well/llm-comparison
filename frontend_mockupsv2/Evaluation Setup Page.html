@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation Setup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#1E40AF',
+                        accent: '#60A5FA',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>::-webkit-scrollbar { display: none;}</style>
+</head>
+<body class="font-sans antialiased bg-gray-50 text-gray-900">
+
+<header id="header" class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+    <nav class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                <i class="fa-solid fa-chart-line text-white text-sm"></i>
+            </div>
+            <span class="text-xl font-semibold">LLM Compare</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8">
+            <a href="#dashboard" class="text-sm text-gray-900 font-medium">Home</a>
+            <a href="#workspaces" class="text-sm text-gray-600 hover:text-gray-900 transition">Workspaces</a>
+            <a href="#results" class="text-sm text-gray-600 hover:text-gray-900 transition">Results</a>
+            <a href="#settings" class="text-sm text-gray-600 hover:text-gray-900 transition">Settings</a>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button class="p-2 text-gray-600 hover:text-gray-900 transition">
+                <i class="fa-solid fa-bell"></i>
+            </button>
+            <div class="w-8 h-8 rounded-full overflow-hidden">
+                <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Profile" class="w-full h-full object-cover">
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main id="main-content" class="pt-20">
+    <div class="max-w-7xl mx-auto px-6 py-8">
+        <div id="breadcrumb" class="flex items-center space-x-2 text-sm text-gray-600 mb-8">
+            <a href="#workspaces" class="hover:text-gray-900 transition">Workspaces</a>
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+            <a href="#workspace" class="hover:text-gray-900 transition">Customer Support KB</a>
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+            <span class="text-gray-900 font-medium">Create Evaluation</span>
+        </div>
+
+        <div id="page-header" class="mb-12">
+            <h1 class="text-3xl font-bold mb-3">Create New Evaluation</h1>
+            <p class="text-gray-600 text-lg">Configure your evaluation settings to compare LLM performance on your dataset</p>
+        </div>
+
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div id="evaluation-form" class="lg:col-span-2 space-y-8">
+                <div id="dataset-selection" class="bg-white rounded-2xl border border-gray-200 p-8">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-database text-blue-500"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold">Select Dataset</h2>
+                            <p class="text-sm text-gray-600">Choose the dataset for evaluation</p>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div id="dataset-1" class="border-2 border-blue-500 bg-blue-50 rounded-xl p-6 cursor-pointer transition hover:shadow-lg">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 mb-1">Customer Support QA</h3>
+                                    <p class="text-sm text-gray-600">Generated from support documentation</p>
+                                </div>
+                                <div class="w-5 h-5 border-2 border-blue-500 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <i class="fa-solid fa-check text-white text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                <span><i class="fa-solid fa-question-circle mr-1"></i>45 questions</span>
+                                <span><i class="fa-solid fa-clock mr-1"></i>2 days ago</span>
+                            </div>
+                        </div>
+
+                        <div id="dataset-2" class="border-2 border-gray-200 bg-white rounded-xl p-6 cursor-pointer transition hover:border-gray-300 hover:shadow-lg">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="font-semibold text-gray-900 mb-1">Product Knowledge Base</h3>
+                                    <p class="text-sm text-gray-600">Generated from product docs</p>
+                                </div>
+                                <div class="w-5 h-5 border-2 border-gray-200 rounded-full"></div>
+                            </div>
+                            <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                <span><i class="fa-solid fa-question-circle mr-1"></i>32 questions</span>
+                                <span><i class="fa-solid fa-clock mr-1"></i>5 days ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="model-selection" class="bg-white rounded-2xl border border-gray-200 p-8">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-brain text-purple-500"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold">Select Models to Compare</h2>
+                            <p class="text-sm text-gray-600">Choose multiple models for comparison</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mb-6">
+                        <div id="model-UX Pilot AI" class="border-2 border-blue-500 bg-blue-50 rounded-xl p-4 cursor-pointer transition">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-robot text-white text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium">GPT-4</h3>
+                                        <p class="text-sm text-gray-600">UX Pilot AI</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-600">$0.03/1k tokens</span>
+                                    <div class="w-5 h-5 border-2 border-blue-500 bg-blue-500 rounded flex items-center justify-center">
+                                        <i class="fa-solid fa-check text-white text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="model-UX Pilot" class="border-2 border-blue-500 bg-blue-50 rounded-xl p-4 cursor-pointer transition">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-robot text-white text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium">UX Pilot 3 Sonnet</h3>
+                                        <p class="text-sm text-gray-600">UX Pilot AI</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-600">$0.015/1k tokens</span>
+                                    <div class="w-5 h-5 border-2 border-blue-500 bg-blue-500 rounded flex items-center justify-center">
+                                        <i class="fa-solid fa-check text-white text-xs"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="model-gemini" class="border-2 border-gray-200 bg-white rounded-xl p-4 cursor-pointer transition hover:border-gray-300">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                        <i class="fa-solid fa-robot text-white text-sm"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-medium">Gemini Pro</h3>
+                                        <p class="text-sm text-gray-600">Google</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-600">$0.001/1k tokens</span>
+                                    <div class="w-5 h-5 border-2 border-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="flex items-center space-x-2 text-blue-500 hover:text-blue-600 transition font-medium">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add More Models</span>
+                    </button>
+                </div>
+
+                <div id="judge-model-selection" class="bg-white rounded-2xl border border-gray-200 p-8">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-gavel text-green-500"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold">Judge Model</h2>
+                            <p class="text-sm text-gray-600">Model used to evaluate answer quality</p>
+                        </div>
+                    </div>
+
+                    <div class="relative">
+                        <select class="w-full p-4 border border-gray-200 rounded-xl bg-white text-gray-900 font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition">
+                            <option>GPT-4 (Recommended)</option>
+                            <option>UX Pilot 3 Opus</option>
+                            <option>GPT-3.5 Turbo</option>
+                            <option>Gemini Pro</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <div id="evaluation-settings" class="bg-white rounded-2xl border border-gray-200 p-8">
+                    <div class="flex items-center space-x-3 mb-6">
+                        <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <i class="fa-solid fa-sliders text-orange-500"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-semibold">Evaluation Settings</h2>
+                            <p class="text-sm text-gray-600">Configure evaluation parameters</p>
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Temperature</label>
+                            <input type="range" min="0" max="1" step="0.1" value="0.7" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>0.0</span>
+                                <span>0.7</span>
+                                <span>1.0</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Max Tokens</label>
+                            <input type="number" value="512" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Top K Documents</label>
+                            <input type="number" value="5" class="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Similarity Threshold</label>
+                            <input type="range" min="0" max="1" step="0.05" value="0.75" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                            <div class="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>0.0</span>
+                                <span>0.75</span>
+                                <span>1.0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="evaluation-summary" class="lg:col-span-1">
+                <div class="bg-white rounded-2xl border border-gray-200 p-8 sticky top-28">
+                    <h3 class="text-xl font-semibold mb-6">Evaluation Summary</h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Dataset</h4>
+                            <p class="text-sm text-gray-600">Customer Support QA (45 questions)</p>
+                        </div>
+
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Models Selected</h4>
+                            <div class="space-y-2">
+                                <div class="flex items-center space-x-2 text-sm">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span>GPT-4</span>
+                                </div>
+                                <div class="flex items-center space-x-2 text-sm">
+                                    <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                    <span>UX Pilot 3 Sonnet</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="font-medium text-gray-900 mb-2">Judge Model</h4>
+                            <p class="text-sm text-gray-600">GPT-4</p>
+                        </div>
+
+                        <div class="border-t border-gray-200 pt-6">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm text-gray-600">Estimated Cost</span>
+                                <span class="font-medium">$2.45</span>
+                            </div>
+                            <div class="flex items-center justify-between mb-4">
+                                <span class="text-sm text-gray-600">Estimated Time</span>
+                                <span class="font-medium">~3 minutes</span>
+                            </div>
+                        </div>
+
+                        <button class="w-full bg-blue-500 text-white font-medium py-4 rounded-xl hover:bg-blue-600 transition shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40">
+                            <i class="fa-solid fa-play mr-2"></i>
+                            Create & Run Evaluation
+                        </button>
+
+                        <button class="w-full bg-gray-100 text-gray-700 font-medium py-3 rounded-xl hover:bg-gray-200 transition">
+                            <i class="fa-solid fa-save mr-2"></i>
+                            Save as Draft
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const datasetCards = document.querySelectorAll('#dataset-selection [id^="dataset-"]');
+    const modelCards = document.querySelectorAll('#model-selection [id^="model-"]');
+    
+    datasetCards.forEach(card => {
+        card.addEventListener('click', function() {
+            datasetCards.forEach(c => {
+                c.classList.remove('border-blue-500', 'bg-blue-50');
+                c.classList.add('border-gray-200', 'bg-white');
+                const checkbox = c.querySelector('.w-5.h-5');
+                checkbox.classList.remove('border-blue-500', 'bg-blue-500');
+                checkbox.classList.add('border-gray-200');
+                checkbox.innerHTML = '';
+            });
+            
+            this.classList.remove('border-gray-200', 'bg-white');
+            this.classList.add('border-blue-500', 'bg-blue-50');
+            const checkbox = this.querySelector('.w-5.h-5');
+            checkbox.classList.remove('border-gray-200');
+            checkbox.classList.add('border-blue-500', 'bg-blue-500');
+            checkbox.innerHTML = '<i class="fa-solid fa-check text-white text-xs"></i>';
+        });
+    });
+    
+    modelCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const checkbox = this.querySelector('.w-5.h-5');
+            const isSelected = checkbox.classList.contains('bg-blue-500');
+            
+            if (isSelected) {
+                this.classList.remove('border-blue-500', 'bg-blue-50');
+                this.classList.add('border-gray-200', 'bg-white');
+                checkbox.classList.remove('border-blue-500', 'bg-blue-500');
+                checkbox.classList.add('border-gray-200');
+                checkbox.innerHTML = '';
+            } else {
+                this.classList.remove('border-gray-200', 'bg-white');
+                this.classList.add('border-blue-500', 'bg-blue-50');
+                checkbox.classList.remove('border-gray-200');
+                checkbox.classList.add('border-blue-500', 'bg-blue-500');
+                checkbox.innerHTML = '<i class="fa-solid fa-check text-white text-xs"></i>';
+            }
+        });
+    });
+});
+</script>
+
+</body>
+</html>

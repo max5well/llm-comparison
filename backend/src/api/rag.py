@@ -141,8 +141,10 @@ async def process_document_background(
 
     except Exception as e:
         # Update document status to failed
+        import traceback
+        error_details = f"{str(e)}\n{traceback.format_exc()}"
         update_document_status(db, document_id, "failed", error_message=str(e))
-        print(f"Error processing document {document_id}: {str(e)}")
+        print(f"Error processing document {document_id}: {error_details}")
 
 
 @router.post("/{document_id}/process", response_model=ProcessDocumentResponse)

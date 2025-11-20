@@ -49,6 +49,7 @@ class DocumentResponse(BaseModel):
     file_size_bytes: Optional[int]
     processing_status: str
     total_chunks: int
+    error_message: Optional[str] = None
     created_at: str
 
     class Config:
@@ -67,6 +68,13 @@ async def create_workspace_endpoint(
     A workspace contains documents, embeddings, and evaluation configurations.
     """
     from uuid import UUID
+
+    # Validate chunk_overlap is less than chunk_size
+    if request.chunk_overlap >= request.chunk_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"chunk_overlap ({request.chunk_overlap}) must be less than chunk_size ({request.chunk_size})"
+        )
 
     workspace = create_workspace(
         db=db,
@@ -254,7 +262,99 @@ async def list_documents(
             file_size_bytes=d.file_size_bytes,
             processing_status=d.processing_status,
             total_chunks=d.total_chunks,
+            error_message=d.error_message,
             created_at=d.created_at.isoformat()
         )
         for d in documents
     ]
+
+
+@router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document_endpoint(
+    document_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Delete a document and all associated chunks/embeddings.
+    """
+    from src.db.queries import delete_document
+
+    success = delete_document(db, UUID(document_id))
+
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    return None
+
+
+@router.patch("/documents/{document_id}")
+async def update_document_endpoint(
+    document_id: str,
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Update document properties (currently supports filename only).
+    """
+    from src.db.queries import get_document
+
+    document = get_document(db, UUID(document_id))
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    # Update filename if provided
+    if "filename" in request:
+        document.filename = request["filename"]
+        db.commit()
+        db.refresh(document)
+
+    return {
+        "id": str(document.id),
+        "filename": document.filename,
+        "updated_at": document.updated_at.isoformat()
+    }
+
+
+@router.get("/{workspace_id}/stats")
+async def get_workspace_stats(
+    workspace_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get workspace statistics including total chunks.
+    """
+    documents = get_workspace_documents(db, UUID(workspace_id))
+
+    total_chunks = sum(d.total_chunks for d in documents if d.processing_status == 'completed')
+    completed_documents = sum(1 for d in documents if d.processing_status == 'completed')
+
+    return {
+        "total_documents": len(documents),
+        "completed_documents": completed_documents,
+        "total_chunks": total_chunks,
+        "suggested_min_questions": max(1, total_chunks // 10),
+        "suggested_max_questions": max(5, total_chunks // 2)
+    }
+
+
+@router.get("/api-keys/status")
+async def get_api_keys_status():
+    """
+    Check which API keys are configured.
+    Returns a map of provider -> boolean indicating if key is set.
+    """
+    return {
+        "openai": bool(settings.openai_api_key and settings.openai_api_key.strip()),
+        "anthropic": bool(settings.anthropic_api_key and settings.anthropic_api_key.strip()),
+        "mistral": bool(settings.mistral_api_key and settings.mistral_api_key.strip()),
+        "together": bool(settings.together_api_key and settings.together_api_key.strip()),
+        "huggingface": bool(settings.huggingface_api_key and settings.huggingface_api_key.strip()),
+        "voyage": bool(settings.voyage_api_key and settings.voyage_api_key.strip()),
+        "cohere": bool(settings.cohere_api_key and settings.cohere_api_key.strip()),
+    }

@@ -2,9 +2,21 @@ from typing import List, Dict, Any, Optional
 import chromadb
 from chromadb.config import Settings
 from uuid import uuid4
+import asyncio
+import time
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+    before_sleep_log
+)
+import logging
 
 from src.core.config import settings as app_settings
 from src.core.embedding_providers import get_embedding_provider
+
+logger = logging.getLogger(__name__)
 
 
 class RAGIndex:
@@ -52,6 +64,36 @@ class RAGIndex:
         self.embedding_model = embedding_model
         self.embedding_provider = get_embedding_provider(embedding_provider)
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type((Exception,)),
+        before_sleep=before_sleep_log(logger, logging.WARNING)
+    )
+    async def _generate_embeddings_with_retry(self, chunks: List[str]) -> List[List[float]]:
+        """
+        Generate embeddings with retry logic and timeout.
+
+        Retries up to 3 times with exponential backoff (2s, 4s, 8s).
+        Includes a 60-second timeout per attempt.
+        """
+        try:
+            # Add timeout to the embedding call
+            embedding_response = await asyncio.wait_for(
+                self.embedding_provider.embed_texts(
+                    texts=chunks,
+                    model=self.embedding_model
+                ),
+                timeout=60.0  # 60 second timeout
+            )
+            return embedding_response.embeddings
+        except asyncio.TimeoutError:
+            logger.error(f"Embedding generation timed out after 60 seconds for {len(chunks)} chunks")
+            raise Exception(f"Embedding generation timed out. Try with fewer or smaller documents.")
+        except Exception as e:
+            logger.error(f"Error generating embeddings: {str(e)}")
+            raise
+
     async def add_chunks(
         self,
         chunks: List[str],
@@ -76,13 +118,9 @@ class RAGIndex:
         if ids is None:
             ids = [str(uuid4()) for _ in chunks]
 
-        # Generate embeddings
-        embedding_response = await self.embedding_provider.embed_texts(
-            texts=chunks,
-            model=self.embedding_model
-        )
+        # Generate embeddings with retry and timeout
+        embeddings = await self._generate_embeddings_with_retry(chunks)
 
-        embeddings = embedding_response.embeddings
 
         # Prepare metadata
         if metadatas is None:

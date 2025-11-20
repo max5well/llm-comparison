@@ -1,0 +1,602 @@
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme:
+        {
+          extend:
+          {
+            colors:
+            {
+              primary: '#3B82F6',
+              secondary: '#1E40AF',
+              accent: '#60A5FA',
+            },
+            fontFamily:
+            {
+              sans: ['Inter', 'system-ui', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap"
+      rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-3.1.1.min.js"></script>
+    <script>
+      window.FontAwesomeConfig = {
+        autoReplaceSvg: 'nest'
+      };
+    </script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+      ::-webkit-scrollbar
+      {
+        display: none;
+      }
+    </style>
+    <style data-grapesjs-styles="true">
+      *
+      {
+        box-sizing: border-box;
+      }
+
+      body
+      {
+        margin: 0;
+      }
+
+      ::-webkit-scrollbar
+      {
+        display: none;
+      }
+
+      #accuracy-chart
+      {
+        height: 320px;
+      }
+
+      #faithfulness-chart
+      {
+        height: 320px;
+      }
+
+      #latency-chart
+      {
+        height: 320px;
+      }
+
+      #cost-chart
+      {
+        height: 320px;
+      }
+
+      #iai9q6
+      {
+        width: 92%;
+      }
+
+      #ihgyhw
+      {
+        width: 95%;
+      }
+
+      #i1cnxi
+      {
+        width: 89%;
+      }
+
+      #ibaj4i
+      {
+        width: 93%;
+      }
+
+      #iqhwh6
+      {
+        width: 85%;
+      }
+
+      #iblonk
+      {
+        width: 88%;
+      }
+
+      #ittw55
+      {
+        width: 82%;
+      }
+
+      #i97p4s
+      {
+        width: 86%;
+      }
+
+      #latency-chart-2
+      {
+        height: 320px;
+      }
+
+      #latency-chart-2-2
+      {
+        height: 320px;
+      }
+    </style>
+  </head>
+
+  <body class="font-sans antialiased bg-gray-50 text-gray-900">
+    <header id="header"
+      class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+      <nav
+        class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div
+            class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <i class="fa-solid fa-chart-line text-white text-sm"></i></div><span
+            class="text-xl font-semibold">LLM Compare</span>
+        </div>
+        <div class="hidden md:flex items-center space-x-8"><a href="#home"
+            class="text-sm text-gray-600 hover:text-gray-900 transition">Home</a><a
+            href="#workspaces"
+            class="text-sm text-gray-600 hover:text-gray-900 transition">Workspaces</a><a
+            href="#results"
+            class="text-sm text-blue-600 font-medium">Results</a><a
+            href="#settings"
+            class="text-sm text-gray-600 hover:text-gray-900 transition">Settings</a>
+        </div>
+        <div class="flex items-center space-x-4"><button
+            class="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-gray-100 transition"><i
+              class="fa-solid fa-bell text-gray-600"></i></button><img
+            src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg"
+            alt="User" class="w-9 h-9 rounded-full object-cover cursor-pointer">
+        </div>
+      </nav>
+    </header>
+    <main id="main-content" class="pt-20">
+      <section id="results-header" class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-6 py-8">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <div class="flex items-center space-x-3 mb-2"><a
+                  href="#workspaces"
+                  class="text-sm text-gray-500 hover:text-gray-700">Workspaces</a><i
+                  class="fa-solid fa-chevron-right text-gray-400 text-xs"></i><a
+                  href="#evaluation"
+                  class="text-sm text-gray-500 hover:text-gray-700">Customer
+                  Support KB</a><i
+                  class="fa-solid fa-chevron-right text-gray-400 text-xs"></i><span
+                  class="text-sm text-gray-900 font-medium">Evaluation
+                  Results</span></div>
+              <h1 class="text-3xl font-bold">Evaluation Results</h1>
+              <p class="text-gray-600 mt-2">Comparing 4 models across 50
+                questions</p>
+            </div>
+            <div class="flex items-center space-x-3"><button
+                class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium flex items-center space-x-2"><i
+                  class="fa-solid fa-download"></i><span>Export
+                  JSONL</span></button><button
+                class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm font-medium flex items-center space-x-2"><i
+                  class="fa-solid fa-share-nodes"></i><span>Share
+                  Results</span></button></div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div
+              class="inline-flex items-center space-x-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg">
+              <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse">
+              </div><span
+                class="text-xs text-green-700 font-medium">Completed</span>
+            </div><span class="text-sm text-gray-500">Run on Dec 19, 2024 at
+              3:45 PM</span><span class="text-sm text-gray-400">•</span><span
+              class="text-sm text-gray-500">Duration: 2m 34s</span>
+          </div>
+        </div>
+      </section>
+      <section id="metrics-overview" class="max-w-7xl mx-auto px-6 py-8">
+        <div class="grid grid-cols-5 gap-4">
+          <div id="metric-card-1"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-2"><span
+                class="text-sm text-gray-600">Accuracy</span><i
+                class="fa-solid fa-bullseye text-blue-500"></i></div>
+            <div class="text-2xl font-bold text-gray-900">87.5%</div>
+            <div class="flex items-center mt-2 text-xs text-green-600"><i
+                class="fa-solid fa-arrow-up mr-1"></i><span>+5.2% vs
+                baseline</span></div>
+          </div>
+          <div id="metric-card-2"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-2"><span
+                class="text-sm text-gray-600">Faithfulness</span><i
+                class="fa-solid fa-shield-halved text-purple-500"></i></div>
+            <div class="text-2xl font-bold text-gray-900">92.3%</div>
+            <div class="flex items-center mt-2 text-xs text-green-600"><i
+                class="fa-solid fa-arrow-up mr-1"></i><span>+3.1% vs
+                baseline</span></div>
+          </div>
+          <div id="metric-card-3"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-2"><span
+                class="text-sm text-gray-600">Avg Latency</span><i
+                class="fa-solid fa-clock text-orange-500"></i></div>
+            <div class="text-2xl font-bold text-gray-900">1.2s</div>
+            <div class="flex items-center mt-2 text-xs text-red-600"><i
+                class="fa-solid fa-arrow-up mr-1"></i><span>+0.3s vs
+                baseline</span></div>
+          </div>
+          <div id="metric-card-4"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-2"><span
+                class="text-sm text-gray-600">Avg Cost</span><i
+                class="fa-solid fa-dollar-sign text-green-500"></i></div>
+            <div class="text-2xl font-bold text-gray-900">$0.042</div>
+            <div class="flex items-center mt-2 text-xs text-green-600"><i
+                class="fa-solid fa-arrow-down mr-1"></i><span>-12% vs
+                baseline</span></div>
+          </div>
+          <div id="metric-card-5"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-2"><span
+                class="text-sm text-gray-600">Total Queries</span><i
+                class="fa-solid fa-list-check text-indigo-500"></i></div>
+            <div class="text-2xl font-bold text-gray-900">200</div>
+            <div class="flex items-center mt-2 text-xs text-gray-500"><span>50
+                questions × 4 models</span></div>
+          </div>
+        </div>
+      </section>
+      <section id="comparison-charts" class="max-w-7xl mx-auto px-6 pb-8">
+        <div class="grid grid-cols-2 gap-6">
+          <div id="accuracy-chart-card"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold">Accuracy Comparison</h3><button
+                class="text-sm text-gray-500 hover:text-gray-700"><i
+                  class="fa-solid fa-ellipsis"></i></button>
+            </div>
+            <div id="accuracy-chart"></div>
+          </div>
+          <div id="faithfulness-chart-card"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold">Faithfulness Score</h3><button
+                class="text-sm text-gray-500 hover:text-gray-700"><i
+                  class="fa-solid fa-ellipsis"></i></button>
+            </div>
+            <div id="faithfulness-chart"></div>
+          </div>
+          <div id="latency-chart-card"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold">Reasoning Score</h3><button
+                class="text-sm text-gray-500 hover:text-gray-700"><i
+                  class="fa-solid fa-ellipsis"></i></button>
+            </div>
+            <div id="latency-chart"></div>
+          </div>
+          <div id="latency-chart-card-2"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold">Context Utilization</h3><button
+                class="text-sm text-gray-500 hover:text-gray-700"><i
+                  class="fa-solid fa-ellipsis"></i></button>
+            </div>
+            <div id="latency-chart-2"></div>
+          </div>
+          <div id="latency-chart-card-2-2"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold">Average Latency</h3><button
+                class="text-sm text-gray-500 hover:text-gray-700"><i
+                  class="fa-solid fa-ellipsis"></i></button>
+            </div>
+            <div id="latency-chart-2-2"></div>
+          </div>
+          <div id="cost-chart-card"
+            class="bg-white rounded-xl p-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold">Cost per Query</h3><button
+                class="text-sm text-gray-500 hover:text-gray-700"><i
+                  class="fa-solid fa-ellipsis"></i></button>
+            </div>
+            <div id="cost-chart"></div>
+          </div>
+        </div>
+      </section>
+      <section id="leaderboard-section" class="max-w-7xl mx-auto px-6 pb-8">
+        <div class="bg-white rounded-xl border border-gray-200">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold mb-1">Model Leaderboard</h3>
+                <p class="text-sm text-gray-600">Ranked by overall performance
+                  score</p>
+              </div>
+              <div class="flex items-center space-x-2"><button
+                  class="px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">Overall</button><button
+                  class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Accuracy</button><button
+                  class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Latency</button><button
+                  class="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">Cost</button>
+              </div>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Rank</th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Model</th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Accuracy</th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Faithfulness</th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Latency</th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cost</th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Score</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr id="leaderboard-row-1" class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div
+                      class="flex items-center justify-center w-8 h-8 bg-yellow-100 text-yellow-700 rounded-lg font-bold text-sm">
+                      1</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-3">
+                      <div
+                        class="w-8 h-8 bg-gradient-to-br from-green-400 to-green-500 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-brain text-white text-xs"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">GPT-4 Turbo</div>
+                        <div class="text-xs text-gray-500">UX Pilot AI</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-green-500 h-2 rounded-full" id="iai9q6">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">92%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-green-500 h-2 rounded-full" id="ihgyhw">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">95%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">1.8s</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">$0.065</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">94.2</span>
+                  </td>
+                </tr>
+                <tr id="leaderboard-row-2" class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div
+                      class="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm">
+                      2</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-3">
+                      <div
+                        class="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-brain text-white text-xs"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">UX Pilot 3 Opus
+                        </div>
+                        <div class="text-xs text-gray-500">UX Pilot AI</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-blue-500 h-2 rounded-full" id="i1cnxi">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">89%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-blue-500 h-2 rounded-full" id="ibaj4i">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">93%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">1.2s</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">$0.048</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">91.8</span>
+                  </td>
+                </tr>
+                <tr id="leaderboard-row-3" class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div
+                      class="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm">
+                      3</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-3">
+                      <div
+                        class="w-8 h-8 bg-gradient-to-br from-purple-400 to-purple-500 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-brain text-white text-xs"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">Gemini Pro</div>
+                        <div class="text-xs text-gray-500">Google</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-purple-500 h-2 rounded-full" id="iqhwh6">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">85%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-purple-500 h-2 rounded-full" id="iblonk">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">88%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">0.9s</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">$0.028</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-medium rounded-full">87.5</span>
+                  </td>
+                </tr>
+                <tr id="leaderboard-row-4" class="hover:bg-gray-50 transition">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div
+                      class="flex items-center justify-center w-8 h-8 bg-gray-100 text-gray-700 rounded-lg font-bold text-sm">
+                      4</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-3">
+                      <div
+                        class="w-8 h-8 bg-gradient-to-br from-red-400 to-red-500 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-brain text-white text-xs"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">Mistral Large
+                        </div>
+                        <div class="text-xs text-gray-500">Mistral AI</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-orange-500 h-2 rounded-full" id="ittw55">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">82%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center space-x-2">
+                      <div class="flex-1 bg-gray-200 rounded-full h-2 w-20">
+                        <div class="bg-orange-500 h-2 rounded-full" id="i97p4s">
+                        </div>
+                      </div><span
+                        class="text-sm font-medium text-gray-900">86%</span>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">0.7s</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="text-sm text-gray-900">$0.022</span></td>
+                  <td class="px-6 py-4 whitespace-nowrap"><span
+                      class="px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-full">84.3</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      <section id="question-details-section"
+        class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="bg-white rounded-xl border border-gray-200">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold mb-1">Per-Question Analysis
+                </h3>
+                <p class="text-sm text-gray-600">Detailed comparison for each
+                  evaluation question</p>
+              </div>
+              <div class="flex items-center space-x-3">
+                <div class="relative"><i
+                    class="fa-solid fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i><input
+                    type="text" placeholder="Search questions..."
+                    class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div><button
+                  class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm"><i
+                    class="fa-solid fa-filter mr-2"></i>
+                  Filter
+                </button>
+              </div>
+            </div>
+          </div>
+          <div id="question-item-1"
+            class="border-b border-gray-200 hover:bg-gray-50 transition">
+            <div class="p-6">
+              <div class="flex items-start justify-between mb-4">
+                <div class="flex-1">
+                  <div class="flex items-center space-x-3 mb-2"><span
+                      class="px-2 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded">Q1</span><span
+                      class="text-sm text-gray-500">Category: Product
+                      Features</span></div>
+                  <p class="text-gray-900 font-medium mb-3">What are the main
+                    features of the premium plan?</p>
+                  <p class="text-sm text-gray-600 mb-4"><span
+                      class="font-medium">Expected:</span> Premium plan includes
+                    unlimited workspaces, priority support, advanced analytics,
+                    and API access.</p>
+                </div><button class="text-gray-400 hover:text-gray-600"><i
+                    class="fa-solid fa-chevron-down"></i></button>
+              </div>
+              <div class="grid grid-cols-4 gap-4">
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-2"><span
+                      class="text-xs font-medium text-green-700">GPT-4
+                      Turbo</span><span
+                      class="px-2 py-0.5 bg-green-200 text-green-800 text-xs font-bold rounded">98%</span>
+                  </div>
+                  <p class="text-xs text-gray-700 leading-relaxed">Accurate and
+                    comprehensive answer covering all key features.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </body>
+
+</html>

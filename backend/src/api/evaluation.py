@@ -53,6 +53,18 @@ class TestDatasetResponse(BaseModel):
     created_at: str
 
 
+class TestQuestionResponse(BaseModel):
+    id: str
+    dataset_id: str
+    question: str
+    expected_answer: Optional[str]
+    context: Optional[str]
+    created_at: str
+
+    class Config:
+        from_attributes = True
+
+
 class CreateEvaluationRequest(BaseModel):
     workspace_id: str
     dataset_id: str
@@ -212,6 +224,69 @@ async def upload_test_questions_csv(
         "questions_added": questions_added,
         "message": f"Successfully added {questions_added} questions"
     }
+
+
+@router.post("/dataset/{dataset_id}/questions")
+async def add_question_to_dataset(
+    dataset_id: str,
+    question_data: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Add a single question to a dataset.
+    """
+    from src.db.queries import get_test_dataset, create_test_question
+
+    dataset = get_test_dataset(db, UUID(dataset_id))
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found"
+        )
+
+    question = create_test_question(
+        db,
+        dataset_id=UUID(dataset_id),
+        question=question_data["question"],
+        expected_answer=question_data.get("expected_answer"),
+        context=question_data.get("context")
+    )
+
+    return {
+        "id": str(question.id),
+        "message": "Question added successfully"
+    }
+
+
+@router.get("/dataset/{dataset_id}/questions", response_model=List[TestQuestionResponse])
+async def get_questions(
+    dataset_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all questions for a dataset.
+    """
+    dataset = get_test_dataset(db, UUID(dataset_id))
+
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found"
+        )
+
+    questions = get_dataset_questions(db, UUID(dataset_id))
+
+    return [
+        TestQuestionResponse(
+            id=str(q.id),
+            dataset_id=str(q.dataset_id),
+            question=q.question,
+            expected_answer=q.expected_answer,
+            context=q.context,
+            created_at=q.created_at.isoformat()
+        )
+        for q in questions
+    ]
 
 
 @router.post("/dataset/generate-synthetic", response_model=TestDatasetResponse)

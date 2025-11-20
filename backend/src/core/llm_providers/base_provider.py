@@ -9,6 +9,7 @@ class LLMProvider(str, Enum):
     ANTHROPIC = "anthropic"
     MISTRAL = "mistral"
     TOGETHER = "together"
+    HUGGINGFACE = "huggingface"
 
 
 @dataclass

@@ -2,8 +2,10 @@ from typing import Dict, Type
 from .base_provider import BaseLLMProvider, LLMProvider, LLMResponse, LLMMessage
 from .openai_provider import OpenAIProvider
 from .anthropic_provider import AnthropicProvider
-from .mistral_provider import MistralProvider
-from .together_provider import TogetherProvider
+from .huggingface_provider import HuggingFaceProvider
+# Temporarily disabled - uncomment when you have API keys
+# from .mistral_provider import MistralProvider
+# from .together_provider import TogetherProvider
 from src.core.config import settings
 
 
@@ -13,8 +15,10 @@ class LLMProviderFactory:
     _providers: Dict[str, Type[BaseLLMProvider]] = {
         LLMProvider.OPENAI: OpenAIProvider,
         LLMProvider.ANTHROPIC: AnthropicProvider,
-        LLMProvider.MISTRAL: MistralProvider,
-        LLMProvider.TOGETHER: TogetherProvider,
+        LLMProvider.HUGGINGFACE: HuggingFaceProvider,
+        # Temporarily disabled - uncomment when you have API keys
+        # LLMProvider.MISTRAL: MistralProvider,
+        # LLMProvider.TOGETHER: TogetherProvider,
     }
 
     @classmethod
@@ -58,6 +62,7 @@ class LLMProviderFactory:
             LLMProvider.ANTHROPIC: settings.anthropic_api_key,
             LLMProvider.MISTRAL: settings.mistral_api_key,
             LLMProvider.TOGETHER: settings.together_api_key,
+            LLMProvider.HUGGINGFACE: settings.huggingface_api_key,
         }
         return key_mapping.get(provider)
 
