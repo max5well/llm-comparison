@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, FolderOpen, BarChart3, FileText, Zap } from 'lucide-react';
+import { Plus, FolderOpen, BarChart3, FileText, Zap, Rocket, Play, ArrowRight, Brain, Layers, FileLines, Check, Upload, Settings } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api } from '../services/api';
 import type { Workspace } from '../types';
+import { formatDistanceToNow } from 'date-fns';
 
 export const Home: React.FC = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
@@ -27,63 +28,89 @@ export const Home: React.FC = () => {
 
   return (
     <Layout>
-      <div className="space-y-8">
-        {/* Hero Section */}
-        <div className="text-center py-12 bg-gradient-to-br from-primary-50 to-primary-100 rounded-2xl">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Welcome to LLM Compare
-          </h1>
-          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            Compare LLM performance on RAG tasks with automated evaluation and
-            comprehensive metrics
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link to="/workspaces/new" className="btn-primary">
-              <Plus size={20} className="inline mr-2" />
-              Create Workspace
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Welcome Section - Matching Mockup */}
+        <section className="mb-8">
+          <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-8 border border-gray-200">
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">Welcome back! 👋</h1>
+                <p className="text-lg text-gray-600 mb-6">
+                  Ready to evaluate LLMs on your data? Create a new workspace or continue with existing ones.
+                </p>
+                <div className="flex items-center space-x-4">
+                  <Link
+                    to="/workspaces/new"
+                    className="px-6 py-3 bg-blue-500 text-white font-medium rounded-xl hover:bg-blue-600 transition shadow-lg"
+                  >
+                    <Plus size={18} className="inline mr-2" />
+                    Create Workspace
+                  </Link>
+                  <button className="px-6 py-3 bg-white text-gray-700 font-medium rounded-xl border border-gray-200 hover:border-gray-300 transition">
+                    <Play size={18} className="inline mr-2" />
+                    Quick Tour
+                  </button>
+                </div>
+              </div>
+              <div className="hidden lg:block">
+                <div className="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-2xl flex items-center justify-center">
+                  <Rocket className="text-white" size={48} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Quick Actions Section */}
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Link
+              to="/workspaces/new"
+              className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition cursor-pointer"
+            >
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                <Plus className="text-blue-500" size={24} />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Create New Workspace</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Upload documents and set up a new RAG evaluation workspace
+              </p>
+              <div className="flex items-center text-blue-500 text-sm font-medium">
+                Start Creating <ArrowRight size={14} className="ml-2" />
+              </div>
             </Link>
-            <Link to="/workspaces" className="btn-secondary">
-              <FolderOpen size={20} className="inline mr-2" />
-              View Workspaces
+
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition cursor-pointer">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                <FileText className="text-green-500" size={24} />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Connect Google Drive</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Import documents directly from your Google Drive account
+              </p>
+              <div className="flex items-center text-green-500 text-sm font-medium">
+                Connect Now <ArrowRight size={14} className="ml-2" />
+              </div>
+            </div>
+
+            <Link
+              to="/results"
+              className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition cursor-pointer"
+            >
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                <BarChart3 className="text-purple-500" size={24} />
+              </div>
+              <h3 className="text-lg font-semibold mb-2">View Latest Results</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Check your most recent LLM comparison evaluations
+              </p>
+              <div className="flex items-center text-purple-500 text-sm font-medium">
+                View Results <ArrowRight size={14} className="ml-2" />
+              </div>
             </Link>
           </div>
-        </div>
-
-        {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="card">
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-              <FileText className="text-primary-600" size={24} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Document Processing</h3>
-            <p className="text-gray-600 text-sm">
-              Upload documents, chunk intelligently, and generate embeddings with
-              multiple providers
-            </p>
-          </div>
-
-          <div className="card">
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-              <Zap className="text-primary-600" size={24} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Automated Evaluation</h3>
-            <p className="text-gray-600 text-sm">
-              Generate synthetic test questions and evaluate multiple LLMs with
-              LLM-as-a-judge
-            </p>
-          </div>
-
-          <div className="card">
-            <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mb-4">
-              <BarChart3 className="text-primary-600" size={24} />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">Comprehensive Metrics</h3>
-            <p className="text-gray-600 text-sm">
-              Track latency, cost, quality scores, and detailed comparisons across
-              all models
-            </p>
-          </div>
-        </div>
+        </section>
 
         {/* Recent Workspaces */}
         <div>
