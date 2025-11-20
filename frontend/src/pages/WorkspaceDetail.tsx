@@ -90,9 +90,10 @@ export const WorkspaceDetail: React.FC = () => {
 
       try {
         const evaluationsData = await api.listEvaluations(id);
-        setEvaluations(evaluationsData);
+        setEvaluations(evaluationsData || []);
       } catch (error) {
         console.error('Failed to load evaluations:', error);
+        setEvaluations([]); // Set empty array on error to prevent white screen
       }
     } catch (error) {
       console.error('Failed to load workspace:', error);
@@ -658,7 +659,7 @@ export const WorkspaceDetail: React.FC = () => {
               </Link>
             </div>
 
-            {evaluations.length === 0 ? (
+            {!evaluations || evaluations.length === 0 ? (
               <div className="card text-center py-12">
                 <BarChart3 className="mx-auto text-gray-400 mb-4" size={48} />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -673,39 +674,48 @@ export const WorkspaceDetail: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {evaluations.map((evaluation) => (
-                  <Link
-                    key={evaluation.id}
-                    to={`/results/${evaluation.id}`}
-                    className="card hover:shadow-md transition-shadow block"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">{evaluation.name}</h3>
-                          <span className={`badge ${getStatusBadge(evaluation.status)}`}>
-                            {evaluation.status}
-                          </span>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {evaluation.models_to_test.map((model, idx) => (
-                            <span key={idx} className="badge badge-info">
-                              {model.provider}: {model.model}
+                {evaluations.map((evaluation) => {
+                  if (!evaluation) return null;
+                  return (
+                    <Link
+                      key={evaluation.id}
+                      to={`/results/${evaluation.id}`}
+                      className="card hover:shadow-md transition-shadow block"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg">{evaluation.name || 'Unnamed Evaluation'}</h3>
+                            <span className={`badge ${getStatusBadge(evaluation.status || 'pending')}`}>
+                              {evaluation.status || 'pending'}
                             </span>
-                          ))}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          Judge: {evaluation.judge_provider} - {evaluation.judge_model}
-                          {' • '}
-                          Created{' '}
-                          {formatDistanceToNow(new Date(evaluation.created_at), {
-                            addSuffix: true,
-                          })}
+                          </div>
+                          {evaluation.models_to_test && evaluation.models_to_test.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                              {evaluation.models_to_test.map((model, idx) => (
+                                <span key={idx} className="badge badge-info">
+                                  {model.provider}: {model.model}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="text-sm text-gray-600">
+                            {evaluation.judge_provider && evaluation.judge_model && (
+                              <>
+                                Judge: {evaluation.judge_provider} - {evaluation.judge_model}
+                                {' • '}
+                              </>
+                            )}
+                            Created{' '}
+                            {evaluation.created_at && formatDistanceToNow(new Date(evaluation.created_at), {
+                              addSuffix: true,
+                            })}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>
