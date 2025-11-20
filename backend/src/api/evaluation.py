@@ -546,6 +546,42 @@ Answer:"""
                     cost_usd=float(response.cost_usd)
                 )
 
+                # Evaluate quality metrics using LLM judge
+                try:
+                    quality_metrics = await judge.evaluate_all_quality_metrics(
+                        question=question.question,
+                        expected_answer=question.expected_answer,
+                        context=context,
+                        generated_answer=response.content
+                    )
+
+                    # Store quality metrics
+                    from src.db.models import QuestionMetrics
+                    import uuid
+
+                    metrics_record = QuestionMetrics(
+                        id=uuid.uuid4(),
+                        model_result_id=result.id,
+                        evaluation_id=evaluation_id,
+                        question_id=question.id,
+                        accuracy_score=quality_metrics['accuracy']['score'],
+                        faithfulness_score=quality_metrics['faithfulness']['score'],
+                        reasoning_score=quality_metrics['reasoning']['score'],
+                        context_utilization_score=quality_metrics['context_utilization']['score'],
+                        latency_ms=latency_ms,
+                        cost_usd=float(response.cost_usd),
+                        accuracy_explanation=quality_metrics['accuracy']['explanation'],
+                        faithfulness_explanation=quality_metrics['faithfulness']['explanation'],
+                        reasoning_explanation=quality_metrics['reasoning']['explanation'],
+                        context_utilization_explanation=quality_metrics['context_utilization']['explanation']
+                    )
+                    db.add(metrics_record)
+                    db.commit()
+
+                except Exception as metric_error:
+                    print(f"Error evaluating quality metrics: {str(metric_error)}")
+                    # Continue execution even if metrics fail
+
                 model_responses.append(result)
 
             # Compare pairs with judge (if 2 models)
@@ -582,6 +618,78 @@ Answer:"""
                 completed_questions=completed,
                 progress=progress
             )
+
+        # Calculate and store evaluation summary
+        try:
+            from src.db.models import QuestionMetrics, EvaluationSummary
+            from src.core.llm_judge import calculate_overall_score
+
+            # Get all metrics for this evaluation
+            all_metrics = db.query(QuestionMetrics).filter(
+                QuestionMetrics.evaluation_id == evaluation_id
+            ).all()
+
+            if all_metrics:
+                # Calculate averages
+                total_metrics = len(all_metrics)
+                avg_accuracy = sum(m.accuracy_score for m in all_metrics if m.accuracy_score is not None) / sum(1 for m in all_metrics if m.accuracy_score is not None) if any(m.accuracy_score is not None for m in all_metrics) else None
+                avg_faithfulness = sum(m.faithfulness_score for m in all_metrics if m.faithfulness_score) / total_metrics
+                avg_reasoning = sum(m.reasoning_score for m in all_metrics if m.reasoning_score) / total_metrics
+                avg_context_util = sum(m.context_utilization_score for m in all_metrics if m.context_utilization_score) / total_metrics
+                avg_latency = int(sum(m.latency_ms for m in all_metrics) / total_metrics)
+                avg_cost = sum(m.cost_usd for m in all_metrics) / total_metrics
+                total_cost = sum(m.cost_usd for m in all_metrics)
+
+                # Calculate overall score
+                overall = calculate_overall_score({
+                    "accuracy": avg_accuracy,
+                    "faithfulness": avg_faithfulness,
+                    "reasoning": avg_reasoning,
+                    "context_utilization": avg_context_util
+                })
+
+                # Group by model for model-specific summaries
+                models_summary = {}
+                for model_config in models_to_test:
+                    model_key = f"{model_config['provider']}:{model_config['model']}"
+
+                    # Get metrics for this specific model
+                    model_results = db.query(QuestionMetrics).join(
+                        QuestionMetrics.__table__
+                    ).filter(
+                        QuestionMetrics.evaluation_id == evaluation_id
+                    ).all()
+
+                    # Filter by checking model_result's model name (would need join)
+                    # For now, store aggregate data
+                    models_summary[model_key] = {
+                        "model": model_config['model'],
+                        "provider": model_config['provider']
+                    }
+
+                # Store summary
+                summary = EvaluationSummary(
+                    id=uuid.uuid4(),
+                    evaluation_id=evaluation_id,
+                    avg_accuracy=avg_accuracy,
+                    avg_faithfulness=avg_faithfulness,
+                    avg_reasoning=avg_reasoning,
+                    avg_context_utilization=avg_context_util,
+                    avg_latency_ms=avg_latency,
+                    avg_cost_usd=avg_cost,
+                    total_cost_usd=total_cost,
+                    overall_score=overall,
+                    total_questions=len(questions),
+                    total_model_tests=total_metrics,
+                    successful_evaluations=total_metrics,
+                    failed_evaluations=0,
+                    models_summary=models_summary
+                )
+                db.add(summary)
+                db.commit()
+
+        except Exception as summary_error:
+            print(f"Error calculating summary metrics: {str(summary_error)}")
 
         # Mark as completed
         update_evaluation_status(
@@ -669,3 +777,103 @@ async def list_workspace_evaluations(
         )
         for e in evaluations
     ]
+
+
+@router.get("/{evaluation_id}/summary")
+async def get_evaluation_summary(
+    evaluation_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get evaluation summary with aggregate metrics.
+    Returns average scores across all models and questions.
+    """
+    from src.db.models import EvaluationSummary
+
+    summary = db.query(EvaluationSummary).filter(
+        EvaluationSummary.evaluation_id == UUID(evaluation_id)
+    ).first()
+
+    if not summary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Evaluation summary not found"
+        )
+
+    return {
+        "evaluation_id": str(summary.evaluation_id),
+        "avg_accuracy": float(summary.avg_accuracy) if summary.avg_accuracy else None,
+        "avg_faithfulness": float(summary.avg_faithfulness) if summary.avg_faithfulness else None,
+        "avg_reasoning": float(summary.avg_reasoning) if summary.avg_reasoning else None,
+        "avg_context_utilization": float(summary.avg_context_utilization) if summary.avg_context_utilization else None,
+        "avg_latency_ms": summary.avg_latency_ms,
+        "avg_cost_usd": float(summary.avg_cost_usd),
+        "total_cost_usd": float(summary.total_cost_usd),
+        "overall_score": float(summary.overall_score) if summary.overall_score else None,
+        "total_questions": summary.total_questions,
+        "total_model_tests": summary.total_model_tests,
+        "successful_evaluations": summary.successful_evaluations,
+        "failed_evaluations": summary.failed_evaluations,
+        "models_summary": summary.models_summary,
+        "created_at": summary.created_at.isoformat()
+    }
+
+
+@router.get("/{evaluation_id}/metrics")
+async def get_evaluation_metrics_endpoint(
+    evaluation_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed metrics for all question-model combinations in an evaluation.
+    Returns metrics grouped by model.
+    """
+    from src.db.models import QuestionMetrics, ModelResult
+
+    # Get all metrics with model results
+    metrics = db.query(QuestionMetrics, ModelResult).join(
+        ModelResult,
+        QuestionMetrics.model_result_id == ModelResult.id
+    ).filter(
+        QuestionMetrics.evaluation_id == UUID(evaluation_id)
+    ).all()
+
+    if not metrics:
+        return {
+            "evaluation_id": evaluation_id,
+            "metrics_by_model": {},
+            "total_metrics": 0
+        }
+
+    # Group by model
+    metrics_by_model = {}
+
+    for metric, result in metrics:
+        model_key = f"{result.provider}/{result.model_name}"
+
+        if model_key not in metrics_by_model:
+            metrics_by_model[model_key] = {
+                "model": result.model_name,
+                "provider": result.provider,
+                "questions": []
+            }
+
+        metrics_by_model[model_key]["questions"].append({
+            "question_id": str(metric.question_id),
+            "accuracy_score": float(metric.accuracy_score) if metric.accuracy_score else None,
+            "faithfulness_score": float(metric.faithfulness_score) if metric.faithfulness_score else None,
+            "reasoning_score": float(metric.reasoning_score) if metric.reasoning_score else None,
+            "context_utilization_score": float(metric.context_utilization_score) if metric.context_utilization_score else None,
+            "latency_ms": metric.latency_ms,
+            "cost_usd": float(metric.cost_usd),
+            "accuracy_explanation": metric.accuracy_explanation,
+            "faithfulness_explanation": metric.faithfulness_explanation,
+            "reasoning_explanation": metric.reasoning_explanation,
+            "context_utilization_explanation": metric.context_utilization_explanation
+        })
+
+    return {
+        "evaluation_id": evaluation_id,
+        "metrics_by_model": metrics_by_model,
+        "total_metrics": len(metrics)
+    }
