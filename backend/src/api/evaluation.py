@@ -258,6 +258,33 @@ async def add_question_to_dataset(
     }
 
 
+@router.get("/dataset/{dataset_id}", response_model=TestDatasetResponse)
+async def get_dataset(
+    dataset_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get a specific dataset.
+    """
+    dataset = get_test_dataset(db, UUID(dataset_id))
+
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found"
+        )
+
+    return TestDatasetResponse(
+        id=str(dataset.id),
+        workspace_id=str(dataset.workspace_id),
+        name=dataset.name,
+        description=dataset.description,
+        source=dataset.source,
+        total_questions=dataset.total_questions,
+        created_at=dataset.created_at.isoformat()
+    )
+
+
 @router.get("/dataset/{dataset_id}/questions", response_model=List[TestQuestionResponse])
 async def get_questions(
     dataset_id: str,
@@ -355,11 +382,18 @@ async def generate_synthetic_questions_background(
 
         documents = get_workspace_documents(db, workspace_id)
 
-        # Collect all chunks
+        # Collect all chunks with document info
         all_chunks = []
+        chunk_metadatas = []
         for doc in documents:
             chunks = get_document_chunks(db, doc.id)
-            all_chunks.extend([chunk.content for chunk in chunks[:10]])  # Limit per doc
+            for chunk in chunks[:10]:  # Limit per doc
+                all_chunks.append(chunk.content)
+                chunk_metadatas.append({
+                    'document_filename': doc.filename,
+                    'document_id': str(doc.id),
+                    'chunk_index': chunk.chunk_index
+                })
 
         if not all_chunks:
             return
@@ -373,17 +407,22 @@ async def generate_synthetic_questions_background(
         questions = await generator.generate_questions_from_chunks(
             chunks=all_chunks,
             num_questions_per_chunk=num_questions_per_chunk,
-            include_answers=include_answers
+            include_answers=include_answers,
+            chunk_metadatas=chunk_metadatas
         )
 
-        # Save to database
+        # Limit total questions to a reasonable number (num_questions_per_chunk * expected_chunks)
+        # But we'll let the frontend handle limiting to exact number
+        # Save to database - use filename as context instead of chunk content
         for q in questions:
+            # Extract filename from metadata if available
+            filename = q.metadata.get('chunk_metadata', {}).get('document_filename', 'Document')
             create_test_question(
                 db=db,
                 dataset_id=dataset_id,
                 question=q.question,
                 expected_answer=q.expected_answer,
-                context=q.context,
+                context=filename,  # Store filename instead of chunk content
                 metadata=q.metadata
             )
 

@@ -5,13 +5,12 @@ import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api } from '../services/api';
 import type { Dataset } from '../types';
-import { formatDistanceToNow } from 'date-fns';
 
 interface TestQuestion {
   id: string;
   question: string;
-  expected_answer: string | null;
-  context: string | null;
+  expected_answer?: string | null;
+  context?: string | null;
 }
 
 export const DatasetDetail: React.FC = () => {
@@ -34,22 +33,14 @@ export const DatasetDetail: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load questions first to get dataset info from the response
-      const questionsData = await api.getDatasetQuestions(id);
-      setQuestions(questionsData);
+      // Load dataset and questions in parallel
+      const [datasetData, questionsData] = await Promise.all([
+        api.getDataset(id),
+        api.getDatasetQuestions(id)
+      ]);
 
-      // For now, create a basic dataset object from the URL
-      // Ideally we'd have a getDataset API endpoint
-      setDataset({
-        id,
-        workspace_id: '', // We'll get this from navigation state if needed
-        name: 'Dataset',
-        description: null,
-        source: 'manual',
-        total_questions: questionsData.length,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
+      setDataset(datasetData);
+      setQuestions(questionsData);
     } catch (error) {
       console.error('Failed to load dataset:', error);
       alert('Failed to load dataset');
@@ -131,7 +122,7 @@ export const DatasetDetail: React.FC = () => {
 
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dataset Questions</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{dataset.name}</h1>
               <p className="text-gray-600 mt-2">{questions.length} questions</p>
             </div>
 
@@ -143,6 +134,20 @@ export const DatasetDetail: React.FC = () => {
               >
                 <Download size={18} className="inline mr-2" />
                 Export JSONL
+              </button>
+              <button
+                onClick={() => {
+                  // Navigate to create evaluation page with this dataset
+                  if (dataset.workspace_id) {
+                    navigate(`/workspaces/${dataset.workspace_id}/evaluations/new?dataset_id=${id}`);
+                  } else {
+                    alert('Workspace ID not found. Please navigate from a workspace.');
+                  }
+                }}
+                className="btn-primary"
+                disabled={questions.length === 0}
+              >
+                Start Evaluation
               </button>
               <button
                 onClick={handleDelete}
@@ -187,22 +192,38 @@ export const DatasetDetail: React.FC = () => {
 
                     {question.context && (
                       <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-                        <p className="text-xs font-medium text-blue-900 mb-1">Context:</p>
+                        <p className="text-xs font-medium text-blue-900 mb-1">Context/Reference:</p>
                         <p className="text-sm text-blue-800">
-                          {question.context.length > 200
-                            ? `${question.context.substring(0, 200)}...`
-                            : question.context}
+                          {/* Show only filename if context looks like a filename (short, no line breaks, has extension) */}
+                          {/* Otherwise show just the filename part if it contains a path */}
+                          {(() => {
+                            const context = question.context || '';
+                            // Check if it's a simple filename (short, no line breaks, has extension)
+                            if (context.length < 200 && !context.includes('\n') && 
+                                (context.includes('.pdf') || context.includes('.docx') || 
+                                 context.includes('.txt') || context.includes('.xlsx') ||
+                                 context.includes('.pptx') || context.includes('.json') ||
+                                 context.includes('.csv') || context.includes('.html'))) {
+                              // Extract just the filename from path if present
+                              const filename = context.split('/').pop() || context.split('\\').pop() || context;
+                              return filename;
+                            }
+                            // If it's long content, show just a message indicating filename is in dataset
+                            if (context.length > 200 || context.includes('\n')) {
+                              // Try to extract filename from the beginning if it's a path
+                              const firstLine = context.split('\n')[0];
+                              if (firstLine.includes('/') || firstLine.includes('\\')) {
+                                const filename = firstLine.split('/').pop()?.split('\\').pop() || firstLine;
+                                if (filename.length < 100) {
+                                  return filename;
+                                }
+                              }
+                              return <span className="text-gray-500 italic">Document reference available in dataset</span>;
+                            }
+                            // For short content that doesn't look like a filename, show as-is
+                            return context;
+                          })()}
                         </p>
-                        {question.context.length > 200 && (
-                          <button
-                            onClick={() => {
-                              alert(question.context);
-                            }}
-                            className="text-xs text-blue-600 hover:underline mt-1"
-                          >
-                            Show full context
-                          </button>
-                        )}
                       </div>
                     )}
                   </div>

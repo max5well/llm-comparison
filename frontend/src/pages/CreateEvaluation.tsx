@@ -76,11 +76,12 @@ export const CreateEvaluation: React.FC = () => {
         judge_model: formData.judge_model,
         judge_provider: formData.judge_provider,
       });
-      navigate(`/results/${evaluation.id}`);
+      
+      // Redirect to waiting page which will poll for completion
+      navigate(`/evaluations/${evaluation.id}/waiting`);
     } catch (error) {
       console.error('Failed to create evaluation:', error);
       alert('Failed to create evaluation');
-    } finally {
       setSubmitting(false);
     }
   };
@@ -173,7 +174,7 @@ export const CreateEvaluation: React.FC = () => {
           <p className="text-sm text-gray-600 mt-2">
             Use the mockup workflow to configure datasets, models, and judge preferences.
           </p>
-        </div>
+            </div>
 
         <div className="grid gap-6 lg:grid-cols-[3fr_2fr]">
           <form
@@ -184,7 +185,7 @@ export const CreateEvaluation: React.FC = () => {
             {/* Dataset Selection */}
             <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <div>
+            <div>
                   <h2 className="text-xl font-semibold text-gray-900">Select Dataset</h2>
                   <p className="text-sm text-gray-500">
                     Choose the dataset to evaluate on this run.
@@ -217,13 +218,13 @@ export const CreateEvaluation: React.FC = () => {
                     </div>
                   </article>
                 ))}
-              </div>
+            </div>
             </section>
 
             {/* Model Selection */}
             <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <div>
+            <div>
                   <h2 className="text-xl font-semibold text-gray-900">Models to Compare</h2>
                   <p className="text-sm text-gray-500">
                     Add multiple LLMs to compare side-by-side.
@@ -259,31 +260,31 @@ export const CreateEvaluation: React.FC = () => {
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                       <label className="text-xs font-semibold text-gray-600">Provider</label>
-                      <select
-                        value={model.provider}
+                    <select
+                      value={model.provider}
                         onChange={(e) => updateModel(index, 'provider', e.target.value)}
                         className="input text-sm"
-                      >
-                        {LLM_PROVIDERS.map((provider) => (
-                          <option key={provider.value} value={provider.value}>
-                            {provider.label}
-                          </option>
-                        ))}
-                      </select>
+                    >
+                      {LLM_PROVIDERS.map((provider) => (
+                        <option key={provider.value} value={provider.value}>
+                          {provider.label}
+                        </option>
+                      ))}
+                    </select>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                       <label className="text-xs font-semibold text-gray-600">Model</label>
-                      <select
-                        value={model.model}
-                        onChange={(e) => updateModel(index, 'model', e.target.value)}
+                    <select
+                      value={model.model}
+                      onChange={(e) => updateModel(index, 'model', e.target.value)}
                         className="input text-sm"
-                      >
-                        {MODEL_OPTIONS[model.provider]?.map((modelName) => (
-                          <option key={modelName} value={modelName}>
-                            {modelName}
-                          </option>
-                        ))}
-                      </select>
+                    >
+                      {MODEL_OPTIONS[model.provider]?.map((modelName) => (
+                        <option key={modelName} value={modelName}>
+                          {modelName}
+                        </option>
+                      ))}
+                    </select>
                     </div>
                   </div>
                 ))}
@@ -300,43 +301,43 @@ export const CreateEvaluation: React.FC = () => {
                   </p>
                 </div>
                 <span className="text-xs text-gray-500">{formData.judge_provider}</span>
-              </div>
+            </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="label">Judge Provider *</label>
-                  <select
-                    value={formData.judge_provider}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        judge_provider: e.target.value,
-                        judge_model: MODEL_OPTIONS[e.target.value][0],
-                      })
-                    }
-                    className="input"
-                  >
-                    {LLM_PROVIDERS.map((provider) => (
-                      <option key={provider.value} value={provider.value}>
-                        {provider.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Judge Model *</label>
-                  <select
-                    value={formData.judge_model}
-                    onChange={(e) => setFormData({ ...formData, judge_model: e.target.value })}
-                    className="input"
-                  >
-                    {MODEL_OPTIONS[formData.judge_provider]?.map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="label">Judge Provider *</label>
+                <select
+                  value={formData.judge_provider}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      judge_provider: e.target.value,
+                      judge_model: MODEL_OPTIONS[e.target.value][0],
+                    })
+                  }
+                  className="input"
+                >
+                  {LLM_PROVIDERS.map((provider) => (
+                    <option key={provider.value} value={provider.value}>
+                      {provider.label}
+                    </option>
+                  ))}
+                </select>
               </div>
+              <div>
+                <label className="label">Judge Model *</label>
+                <select
+                  value={formData.judge_model}
+                    onChange={(e) => setFormData({ ...formData, judge_model: e.target.value })}
+                  className="input"
+                >
+                  {MODEL_OPTIONS[formData.judge_provider]?.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             </section>
 
             {/* Evaluation Settings */}
@@ -459,7 +460,7 @@ export const CreateEvaluation: React.FC = () => {
                   Save as draft
                   <ArrowRight size={16} />
                 </button>
-                <button
+              <button
                   type="submit"
                   form="evaluation-form"
                   disabled={submitting}
@@ -467,7 +468,7 @@ export const CreateEvaluation: React.FC = () => {
                 >
                   <span>{submitting ? 'Creating...' : 'Create & Run Evaluation'}</span>
                   <Play size={18} />
-                </button>
+              </button>
               </div>
             </div>
           </aside>

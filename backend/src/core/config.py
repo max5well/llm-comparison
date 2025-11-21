@@ -58,7 +58,7 @@ class Settings(BaseSettings):
 
     # File Upload
     max_upload_size_mb: int = 50
-    allowed_file_types: str = "pdf,docx,txt"
+    allowed_file_types: str = "pdf,docx,doc,txt,md,markdown,text,html,htm,csv,xlsx,xls,json,pptx,ppt,rtf,odt,py,js,ts,tsx,jsx,java,cpp,c,h,cs,go,rb,php,swift,kt,rs,sql,sh,bash,yaml,yml,xml,css,scss,less"
 
     # Logging
     log_level: str = "INFO"

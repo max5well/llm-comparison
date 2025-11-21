@@ -1,23 +1,53 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Search, Trash2, X, Database, XCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api } from '../services/api';
 import type { Workspace, Document, Dataset, Evaluation } from '../types';
+import { EMBEDDING_PROVIDERS, EMBEDDING_MODELS } from '../types';
 import { formatDistanceToNow } from 'date-fns';
+
+const statusPillStyles: Record<string, string> = {
+  pending: 'bg-yellow-50 text-yellow-700 border border-yellow-100',
+  processing: 'bg-blue-50 text-blue-700 border border-blue-100',
+  completed: 'bg-green-50 text-green-700 border border-green-100',
+  failed: 'bg-red-50 text-red-700 border border-red-100',
+};
+
+const getStatusPill = (status: string) => statusPillStyles[status] || 'bg-gray-100 text-gray-500 border border-gray-200';
+
+const formatFileSize = (bytes?: number): string => {
+  if (!bytes) return '0 MB';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 export const WorkspaceDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
-  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [processingAllFiles, setProcessingAllFiles] = useState(false);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [chunksModalOpen, setChunksModalOpen] = useState(false);
+  const [chunks, setChunks] = useState<any[]>([]);
+  const [loadingChunks, setLoadingChunks] = useState(false);
   const [activeTab, setActiveTab] = useState<'documents' | 'datasets' | 'evaluations'>('documents');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({
+    chunk_size: 1000,
+    chunk_overlap: 200,
+    embedding_provider: 'openai',
+    embedding_model: 'text-embedding-3-small',
+  });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -25,17 +55,15 @@ export const WorkspaceDetail: React.FC = () => {
     }
   }, [id]);
 
-  // Auto-refresh documents when there are processing documents
   useEffect(() => {
     if (!id) return;
+    // Don't auto-poll, let user manually trigger processing
+    // const processingDocs = documents.filter(
+    //   doc => doc.processing_status === 'processing' || doc.processing_status === 'pending'
+    // );
 
-    const processingDocs = documents.filter(
-      doc => doc.processing_status === 'processing' || doc.processing_status === 'pending'
-    );
+    // if (processingDocs.length === 0) return;
 
-    if (processingDocs.length === 0) return;
-
-    // Poll every 2 seconds when documents are processing
     const interval = setInterval(async () => {
       try {
         const documentsData = await api.listDocuments(id);
@@ -52,11 +80,15 @@ export const WorkspaceDetail: React.FC = () => {
     if (!id) return;
 
     try {
-      // Load workspace first
       const workspaceData = await api.getWorkspace(id);
       setWorkspace(workspaceData);
+      setSettingsForm({
+        chunk_size: workspaceData.chunk_size,
+        chunk_overlap: workspaceData.chunk_overlap,
+        embedding_provider: workspaceData.embedding_provider,
+        embedding_model: workspaceData.embedding_model,
+      });
 
-      // Load other data independently so one failure doesn't break everything
       try {
         const documentsData = await api.listDocuments(id);
         setDocuments(documentsData);
@@ -76,7 +108,7 @@ export const WorkspaceDetail: React.FC = () => {
         setEvaluations(evaluationsData || []);
       } catch (error) {
         console.error('Failed to load evaluations:', error);
-        setEvaluations([]); // Set empty array on error to prevent white screen
+        setEvaluations([]);
       }
     } catch (error) {
       console.error('Failed to load workspace:', error);
@@ -85,22 +117,173 @@ export const WorkspaceDetail: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      pending: 'badge-warning',
-      processing: 'badge-info',
-      completed: 'badge-success',
-      failed: 'badge-error',
-    };
-    return badges[status as keyof typeof badges] || 'badge-info';
+  const handleProcessDocument = async (documentId: string) => {
+    setProcessing(documentId);
+    try {
+      await api.processDocument(documentId);
+      if (id) {
+        const documentsData = await api.listDocuments(id);
+        setDocuments(documentsData);
+      }
+    } catch (error) {
+      console.error('Failed to process document:', error);
+      alert('Failed to process document');
+    } finally {
+      setProcessing(null);
+    }
   };
+
+  const handleProcessAllFiles = async () => {
+    const pendingDocs = documents.filter(
+      doc => doc.processing_status === 'pending'
+    );
+    
+    if (pendingDocs.length === 0) return;
+
+    setProcessingAllFiles(true);
+    try {
+      // Process all pending documents
+      await Promise.all(
+        pendingDocs.map(doc => api.processDocument(doc.id))
+      );
+      // Poll for status updates
+      if (id) {
+        setTimeout(async () => {
+          const documentsData = await api.listDocuments(id);
+          setDocuments(documentsData);
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Failed to process files:', error);
+      alert('Failed to process some files. Please try again.');
+    } finally {
+      setProcessingAllFiles(false);
+    }
+  };
+
+  const handleViewChunks = async (documentId: string) => {
+    setSelectedDocumentId(documentId);
+    setLoadingChunks(true);
+    setChunksModalOpen(true);
+    try {
+      const documentChunks = await api.getDocumentChunks(documentId);
+      setChunks(documentChunks);
+    } catch (error) {
+      console.error('Failed to load chunks:', error);
+      alert('Failed to load chunks');
+      setChunksModalOpen(false);
+    } finally {
+      setLoadingChunks(false);
+    }
+  };
+
+  const pendingDocuments = documents.filter(
+    doc => doc.processing_status === 'pending'
+  );
+
+  const handleDeleteDocument = async (documentId: string) => {
+    if (!confirm('Are you sure you want to delete this document?')) return;
+    try {
+      await api.deleteDocument(documentId);
+      if (id) {
+        const documentsData = await api.listDocuments(id);
+        setDocuments(documentsData);
+      }
+    } catch (error) {
+      console.error('Failed to delete document:', error);
+      alert('Failed to delete document');
+    }
+  };
+
+  const handleUploadDocuments = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!id || !event.target.files) return;
+    const files = Array.from(event.target.files);
+    try {
+      for (const file of files) {
+        await api.uploadDocument(id, file);
+      }
+      const documentsData = await api.listDocuments(id);
+      setDocuments(documentsData);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (error) {
+      console.error('Failed to upload documents:', error);
+      alert('Failed to upload documents');
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    if (!id || !workspace) return;
+    
+    // Check if chunking or embedding settings changed
+    const chunkingChanged = 
+      settingsForm.chunk_size !== workspace.chunk_size ||
+      settingsForm.chunk_overlap !== workspace.chunk_overlap;
+    const embeddingChanged = 
+      settingsForm.embedding_provider !== workspace.embedding_provider ||
+      settingsForm.embedding_model !== workspace.embedding_model;
+    
+    if (chunkingChanged || embeddingChanged) {
+      const completedCount = documents.filter(doc => doc.processing_status === 'completed').length;
+      if (completedCount > 0) {
+        const confirmed = confirm(
+          `Changing these settings will reprocess all ${completedCount} completed document(s). ` +
+          `This may take some time. Do you want to continue?`
+        );
+        if (!confirmed) return;
+      }
+    }
+    
+    setSavingSettings(true);
+    try {
+      const updated = await api.updateWorkspace(id, settingsForm);
+      setWorkspace(updated);
+      setShowSettings(false);
+      
+      // Reload documents to show updated status
+      if (id) {
+        setTimeout(async () => {
+          try {
+            const documentsData = await api.listDocuments(id);
+            setDocuments(documentsData);
+          } catch (error) {
+            console.error('Failed to reload documents:', error);
+          }
+        }, 1000);
+      }
+      
+      if (chunkingChanged || embeddingChanged) {
+        alert('Settings saved! All documents are being reprocessed with the new settings.');
+      } else {
+        alert('Settings saved successfully!');
+      }
+    } catch (error: any) {
+      console.error('Failed to update workspace:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Unknown error';
+      alert(`Failed to update workspace settings: ${errorMessage}`);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const filteredDocuments = documents.filter(doc =>
+    doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const documentStats = {
     total: documents.length,
     pending: documents.filter(doc => doc.processing_status === 'pending').length,
     processing: documents.filter(doc => doc.processing_status === 'processing').length,
     completed: documents.filter(doc => doc.processing_status === 'completed').length,
+    failed: documents.filter(doc => doc.processing_status === 'failed').length,
   };
+
+  const totalChunks = documents.reduce((sum, doc) => sum + (doc.total_chunks || 0), 0);
 
   if (loading) {
     return (
@@ -122,68 +305,77 @@ export const WorkspaceDetail: React.FC = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        {/* Header card */}
-        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
+      <div className="space-y-8">
+        <section className="bg-white border border-gray-200 rounded-3xl shadow-lg p-6 space-y-5">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <Link
-                to="/workspaces"
-                className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-2 gap-2"
-              >
+            <div className="space-y-2">
+              <Link to="/workspaces" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700">
                 <ArrowLeft size={16} />
                 Back to Workspaces
               </Link>
-              <h1 className="text-3xl font-semibold text-gray-900">{workspace?.name}</h1>
-              {workspace?.description && (
-                <p className="text-gray-500 mt-2">{workspace.description}</p>
-              )}
-              <div className="flex flex-wrap gap-3 mt-4 text-xs uppercase font-semibold">
-                <span className="px-3 py-1 rounded-full border border-gray-200">{workspace?.embedding_provider}</span>
-                <span className="px-3 py-1 rounded-full border border-gray-200">{workspace?.embedding_model}</span>
-                <span className="px-3 py-1 rounded-full border border-gray-200">
-                  Chunk: {workspace?.chunk_size} / {workspace?.chunk_overlap}
-                </span>
-              </div>
+              <h1 className="text-4xl font-bold text-gray-900">{workspace.name}</h1>
+              <p className="text-sm text-gray-500">
+                Created {workspace.created_at ? formatDistanceToNow(new Date(workspace.created_at), { addSuffix: true }) : 'recently'}
+                {' • '}
+                Last updated {workspace.updated_at ? formatDistanceToNow(new Date(workspace.updated_at), { addSuffix: true }) : 'recently'}
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <button className="px-5 py-2 rounded-2xl border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400">
+              <button
+                onClick={() => setShowSettings(true)}
+                className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:border-gray-400"
+              >
                 Settings
               </button>
               <Link
-                to={`/workspaces/${workspace?.id}/evaluations/new`}
-                className="px-5 py-2 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                to={`/workspaces/${workspace.id}/datasets/new`}
+                className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-semibold hover:bg-blue-600"
               >
-                Run Evaluation
+                Create Dataset
               </Link>
             </div>
           </div>
-        </div>
+          {workspace.description && <p className="text-gray-600">{workspace.description}</p>}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-semibold flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-500 rounded-full" />
+              Active
+            </span>
+            <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold">
+              {documents.length} Documents
+            </span>
+            <span className="px-3 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-semibold">
+              {workspace.embedding_provider} {workspace.embedding_model}
+            </span>
+          </div>
+        </section>
 
-        {/* Tabs card */}
-        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm">
-          <div className="flex items-center gap-8 px-6 pt-6">
+        <section className="bg-white border border-gray-200 rounded-3xl shadow-sm">
+          <div className="flex flex-wrap items-center gap-4 px-6 pt-6">
             {['documents', 'datasets', 'evaluations'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`pb-4 text-sm font-semibold transition-colors ${
-                  activeTab === tab
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-500 border-b-2 border-transparent hover:text-gray-800 hover:border-gray-300'
-                }`}
+                className={`px-4 py-3 rounded-full border text-sm flex items-center gap-2 ${activeTab === tab
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold shadow'
+                  : 'border-transparent text-gray-500 hover:border-gray-200 hover:text-gray-800'}`}
               >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)} (
-                {tab === 'documents'
-                  ? documentStats.total
-                  : tab === 'datasets'
-                  ? datasets.length
-                  : evaluations.length}
-                )
+                {tab === 'documents' && <FileText size={14} />}
+                {tab === 'datasets' && <Database size={14} />}
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}{' '}
+                <span className="text-xs font-normal text-gray-400">
+                  (
+                  {tab === 'documents'
+                    ? documentStats.total
+                    : tab === 'datasets'
+                    ? datasets.length
+                    : evaluations.length}
+                  )
+                </span>
               </button>
             ))}
             <div className="flex-1" />
-            <div className="px-4 py-1 rounded-xl bg-blue-50 text-blue-600 text-xs font-semibold">
+            <div className="px-4 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">
               Last updated{' '}
               <span className="font-medium">
                 {documents.length > 0
@@ -192,57 +384,166 @@ export const WorkspaceDetail: React.FC = () => {
               </span>
             </div>
           </div>
-          <div className="px-6 pb-6">
+          <div className="border-t border-gray-100 px-6 py-6 space-y-6">
             {activeTab === 'documents' && (
-              <div className="space-y-5">
-                {documents.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">No documents yet. Upload to begin.</p>
+              <>
+                <div className="flex flex-wrap gap-4">
+                  <div className="relative flex-1 min-w-[220px]">
+                    <input
+                      type="text"
+                      placeholder="Search documents..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <Search size={16} />
+                    </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {documents.map((document) => (
+                  <button className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:border-blue-200 hover:text-gray-900">
+                    Filter
+                  </button>
+                  <button
+                    onClick={handleProcessAllFiles}
+                    disabled={processingAllFiles || pendingDocuments.length === 0}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-semibold hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {processingAllFiles ? (
+                      <>
+                        <LoadingSpinner size="sm" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <FileText size={16} />
+                        Process Files ({pendingDocuments.length})
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={handleUploadDocuments}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-semibold hover:bg-blue-600 flex items-center gap-2"
+                  >
+                    <FileText size={16} />
+                    Upload Files
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={handleFileChange}
+                    accept=".pdf,.docx,.doc,.txt,.md,.markdown,.text,.html,.htm,.csv,.xlsx,.xls,.json,.pptx,.ppt,.rtf,.odt,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.h,.cs,.go,.rb,.php,.swift,.kt,.rs,.sql,.sh,.bash,.yaml,.yml,.xml,.css,.scss,.less"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  {filteredDocuments.length === 0 ? (
+                    <div className="text-center py-12 text-gray-600">
+                      {searchQuery ? 'No documents match your search.' : 'No documents yet. Upload to begin.'}
+                    </div>
+                  ) : (
+                    filteredDocuments.map((document) => (
                       <div
                         key={document.id}
-                        className="bg-gray-50 rounded-2xl border border-gray-200 p-5 shadow-sm flex flex-col md:flex-row justify-between gap-4"
+                        className="bg-white rounded-xl border border-gray-200 p-5 hover:border-blue-200 hover:shadow-md transition"
                       >
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                              <FileText className="text-blue-500" size={24} />
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-start space-x-4 flex-1">
+                            <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <FileText className="text-red-500" size={20} />
                             </div>
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900">{document.filename}</h3>
-                              <p className="text-sm text-gray-500">
-                                {document.processing_status} • {document.total_chunks} chunks
-                              </p>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 mb-1 truncate">{document.filename}</h3>
+                              <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                <span>{formatFileSize(document.file_size_bytes)}</span>
+                                <span>•</span>
+                                <button
+                                  onClick={() => document.processing_status === 'completed' && document.total_chunks > 0 ? handleViewChunks(document.id) : null}
+                                  className={`${document.processing_status === 'completed' && document.total_chunks > 0 ? 'hover:text-blue-600 cursor-pointer underline' : ''}`}
+                                  disabled={document.processing_status !== 'completed' || document.total_chunks === 0}
+                                >
+                                  {document.total_chunks} {document.total_chunks === 1 ? 'chunk' : 'chunks'}
+                                </button>
+                                <span>•</span>
+                                <span>Uploaded {formatDistanceToNow(new Date(document.created_at), { addSuffix: true })}</span>
+                              </div>
                             </div>
                           </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-2 ${getStatusPill(document.processing_status)}`}>
+                              {document.processing_status === 'processing' && (
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                              )}
+                              {document.processing_status === 'completed' && (
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                              )}
+                              {document.processing_status === 'failed' && (
+                                <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                              )}
+                              {document.processing_status.charAt(0).toUpperCase() + document.processing_status.slice(1)}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteDocument(document.id)}
+                              className="w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400 hover:text-red-600"
+                              title="Delete document"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                          <span className={`badge ${getStatusBadge(document.processing_status)}`}>
-                            {document.processing_status}
+                        <div className="flex items-center space-x-2">
+                          <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                document.processing_status === 'completed'
+                                  ? 'bg-green-500'
+                                  : document.processing_status === 'processing'
+                                  ? 'bg-blue-500 animate-pulse'
+                                  : document.processing_status === 'failed'
+                                  ? 'bg-red-500'
+                                  : 'bg-gray-400'
+                              }`}
+                              style={{
+                                width:
+                                  document.processing_status === 'completed'
+                                    ? '100%'
+                                    : document.processing_status === 'processing'
+                                    ? '67%'
+                                    : document.processing_status === 'failed'
+                                    ? '100%'
+                                    : '0%',
+                              }}
+                            />
+                          </div>
+                          <span className="text-xs text-gray-500 font-medium">
+                            {document.processing_status === 'completed' ? '100%' :
+                             document.processing_status === 'processing' ? '67%' :
+                             document.processing_status === 'failed' ? 'Failed' : '0%'}
                           </span>
-                          <button
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition"
-                            onClick={() => handleProcessDocument(document.id)}
-                            disabled={processing === document.id}
-                          >
-                            {processing === document.id ? 'Processing...' : 'Process'}
-                          </button>
                         </div>
+                        {document.processing_status === 'failed' && document.error_message && (
+                          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
+                            <div className="flex items-start space-x-2">
+                              <span className="text-red-600 text-sm">⚠</span>
+                              <div className="flex-1">
+                                <div className="text-sm font-medium text-red-900 mb-1">Embedding Failed</div>
+                                <div className="text-xs text-red-700">{document.error_message}</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    ))
+                  )}
+                </div>
+              </>
             )}
+
             {activeTab === 'datasets' && (
               <div className="space-y-4">
                 {datasets.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">No datasets yet. Create one to evaluate models.</p>
-                  </div>
+                  <div className="text-center py-12 text-gray-600">No datasets yet. Create one to evaluate models.</div>
                 ) : (
                   <div className="grid gap-4">
                     {datasets.map((dataset) => (
@@ -256,9 +557,7 @@ export const WorkspaceDetail: React.FC = () => {
                             <h3 className="text-lg font-semibold text-gray-900">{dataset.name}</h3>
                             <p className="text-sm text-gray-500">{dataset.total_questions} questions</p>
                           </div>
-                          <span className="text-xs text-gray-500">
-                            {new Date(dataset.created_at).toLocaleDateString()}
-                          </span>
+                          <span className="text-xs text-gray-500">{new Date(dataset.created_at).toLocaleDateString()}</span>
                         </div>
                       </Link>
                     ))}
@@ -266,12 +565,11 @@ export const WorkspaceDetail: React.FC = () => {
                 )}
               </div>
             )}
+
             {activeTab === 'evaluations' && (
               <div className="space-y-4">
                 {(!evaluations || evaluations.length === 0) && (
-                  <div className="text-center py-12">
-                    <p className="text-gray-600">No evaluations yet. Schedule one to compare models.</p>
-                  </div>
+                  <div className="text-center py-12 text-gray-600">No evaluations yet. Schedule one to compare models.</div>
                 )}
                 <div className="space-y-3">
                   {evaluations.map((evaluation) => {
@@ -282,39 +580,34 @@ export const WorkspaceDetail: React.FC = () => {
                         to={`/results/${evaluation.id}`}
                         className="block bg-gray-50 rounded-2xl border border-gray-200 p-5 hover:border-blue-200 transition"
                       >
-                        <div className="flex justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold text-lg text-gray-900">
-                                {evaluation.name || 'Untitled Evaluation'}
-                              </h3>
-                              <span className={`badge ${getStatusBadge(evaluation.status || 'pending')}`}>
-                                {evaluation.status || 'pending'}
-                              </span>
-                            </div>
-                            {evaluation.models_to_test && evaluation.models_to_test.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mb-2">
-                                {evaluation.models_to_test.map((model, idx) => (
-                                  <span key={idx} className="badge badge-info text-xs">
-                                    {model.provider}: {model.model}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            <div className="text-sm text-gray-500">
-                              {evaluation.judge_provider && evaluation.judge_model && (
-                                <>
-                                  Judge: {evaluation.judge_provider} - {evaluation.judge_model}
-                                  {' • '}
-                                </>
-                              )}
-                              {evaluation.created_at
-                                ? formatDistanceToNow(new Date(evaluation.created_at), { addSuffix: true })
-                                : 'No timestamp'}
-                            </div>
+                        <div className="flex flex-col gap-3">
+                          <div className="flex flex-wrap justify-between gap-3">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {evaluation.name || 'Untitled Evaluation'}
+                            </h3>
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusPill(evaluation.status || 'pending')}`}>
+                              {evaluation.status || 'pending'}
+                            </span>
                           </div>
-                          <div className="text-right text-sm text-gray-500">
-                            {evaluation.total_questions && <div>{evaluation.total_questions} questions</div>}
+                          {evaluation.models_to_test && evaluation.models_to_test.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {evaluation.models_to_test.map((model, idx) => (
+                                <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-100">
+                                  {model.provider}: {model.model}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="text-sm text-gray-500">
+                            {evaluation.judge_provider && evaluation.judge_model && (
+                              <>
+                                Judge: {evaluation.judge_provider} - {evaluation.judge_model}
+                                {' • '}
+                              </>
+                            )}
+                            {evaluation.created_at
+                              ? formatDistanceToNow(new Date(evaluation.created_at), { addSuffix: true })
+                              : 'No timestamp'}
                           </div>
                         </div>
                       </Link>
@@ -324,8 +617,215 @@ export const WorkspaceDetail: React.FC = () => {
               </div>
             )}
           </div>
-        </div>
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-4">
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileText className="text-blue-600" size={20} />
+              </div>
+              <span className="text-xs text-green-500">↗</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{documentStats.total}</div>
+            <div className="text-sm text-gray-500">Total Documents</div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <span className="text-green-600 text-xl">✓</span>
+              </div>
+              <span className="text-xs text-green-500">↗</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{documentStats.completed}</div>
+            <div className="text-sm text-gray-500">Successfully Embedded</div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Database className="text-purple-600" size={20} />
+              </div>
+              <span className="text-xs text-gray-400">~</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{totalChunks}</div>
+            <div className="text-sm text-gray-500">Total Chunks</div>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                <span className="text-red-600 text-xl">⚠</span>
+              </div>
+              <span className="text-xs text-red-500">↘</span>
+            </div>
+            <div className="text-2xl font-bold text-gray-900 mb-1">{documentStats.failed}</div>
+            <div className="text-sm text-gray-500">Failed Documents</div>
+          </div>
+        </section>
       </div>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Workspace Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chunk Size</label>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Chunk Size</span>
+                    <span className="font-semibold text-gray-900">{settingsForm.chunk_size} tokens</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={256}
+                    max={2048}
+                    step={64}
+                    value={settingsForm.chunk_size}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, chunk_size: Number(e.target.value) })}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-400">The maximum number of tokens in a chunk (e.g., 1024 tokens ~ 750 words).</p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Chunk Overlap</label>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Chunk Overlap</span>
+                    <span className="font-semibold text-gray-900">{settingsForm.chunk_overlap} tokens</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={512}
+                    step={16}
+                    value={settingsForm.chunk_overlap}
+                    onChange={(e) => setSettingsForm({ ...settingsForm, chunk_overlap: Number(e.target.value) })}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-gray-400">The number of tokens to overlap between chunks to maintain context.</p>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Embedding Provider</label>
+                <select
+                  value={settingsForm.embedding_provider}
+                  onChange={(e) => {
+                    const provider = e.target.value;
+                    setSettingsForm({
+                      ...settingsForm,
+                      embedding_provider: provider,
+                      embedding_model: EMBEDDING_MODELS[provider]?.[0] || settingsForm.embedding_model,
+                    });
+                  }}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  {EMBEDDING_PROVIDERS.map((provider) => (
+                    <option key={provider.value} value={provider.value}>
+                      {provider.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Embedding Model</label>
+                <select
+                  value={settingsForm.embedding_model}
+                  onChange={(e) => setSettingsForm({ ...settingsForm, embedding_model: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  {EMBEDDING_MODELS[settingsForm.embedding_provider]?.map((model) => (
+                    <option key={model} value={model}>
+                      {model}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => setShowSettings(false)}
+                className="px-5 py-2 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:border-gray-400"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveSettings}
+                disabled={savingSettings}
+                className="px-5 py-2 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-50"
+              >
+                {savingSettings ? 'Saving...' : 'Save Settings'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chunks Modal */}
+      {chunksModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Document Chunks
+              </h2>
+              <button
+                onClick={() => {
+                  setChunksModalOpen(false);
+                  setChunks([]);
+                  setSelectedDocumentId(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <XCircle size={24} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingChunks ? (
+                <div className="text-center py-12">
+                  <LoadingSpinner />
+                </div>
+              ) : chunks.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  No chunks found
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {chunks.map((chunk) => (
+                    <div
+                      key={chunk.id}
+                      className="bg-gray-50 border border-gray-200 rounded-lg p-4"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-semibold text-gray-700">
+                          Chunk {chunk.chunk_index + 1} of {chunks.length}
+                        </span>
+                        {chunk.token_count && (
+                          <span className="text-xs text-gray-500">
+                            {chunk.token_count} tokens
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
+                        {chunk.content}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

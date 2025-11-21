@@ -100,7 +100,10 @@ export const Results: React.FC = () => {
     return (
       <Layout>
         <div className="text-center py-12">
-          <p className="text-gray-600">Results not found</p>
+          <p className="text-gray-600 mb-4">Results not found</p>
+          <p className="text-sm text-gray-500">
+            The evaluation may still be running. Please wait a moment and refresh.
+          </p>
         </div>
       </Layout>
     );
@@ -270,8 +273,8 @@ export const Results: React.FC = () => {
         )}
         
         {metricsSummary && (
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {/* Accuracy */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Accuracy (LLM-graded) */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Accuracy</span>
@@ -280,7 +283,8 @@ export const Results: React.FC = () => {
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_accuracy ? `${(metricsSummary.avg_accuracy * 100).toFixed(1)}%` : 'N/A'}
               </div>
-              </div>
+              <div className="text-xs text-gray-500 mt-1">LLM-graded</div>
+            </div>
 
             {/* Faithfulness */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
@@ -290,43 +294,55 @@ export const Results: React.FC = () => {
               </div>
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_faithfulness ? `${(metricsSummary.avg_faithfulness * 100).toFixed(1)}%` : 'N/A'}
-                </div>
-                </div>
-            
-            {/* Avg Latency */}
+              </div>
+            </div>
+
+            {/* Context Utilization */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Avg Latency</span>
+                <span className="text-sm text-gray-600">Context Utilization</span>
+                <ListChecks className="text-indigo-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {metricsSummary.avg_context_utilization ? `${(metricsSummary.avg_context_utilization * 100).toFixed(1)}%` : 'N/A'}
+              </div>
+            </div>
+
+            {/* Reasoning */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Reasoning</span>
+                <Trophy className="text-yellow-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {metricsSummary.avg_reasoning ? `${(metricsSummary.avg_reasoning * 100).toFixed(1)}%` : 'N/A'}
+              </div>
+            </div>
+            
+            {/* Cost */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Cost</span>
+                <DollarSign className="text-green-500" size={18} />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                ${metricsSummary.total_cost_usd.toFixed(4)}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Total</div>
+            </div>
+
+            {/* Latency */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600">Latency</span>
                 <Clock className="text-orange-500" size={18} />
-                </div>
+              </div>
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_latency_ms < 1000 
                   ? `${metricsSummary.avg_latency_ms.toFixed(0)}ms`
                   : `${(metricsSummary.avg_latency_ms / 1000).toFixed(1)}s`}
               </div>
-            </div>
-            
-            {/* Avg Cost */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Avg Cost</span>
-                <DollarSign className="text-green-500" size={18} />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">
-                ${metricsSummary.avg_cost_usd.toFixed(4)}
-              </div>
-        </div>
-
-            {/* Total Queries */}
-            <div className="bg-white rounded-xl p-6 border border-gray-200">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-600">Total Queries</span>
-                <ListChecks className="text-indigo-500" size={18} />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{totalQueries}</div>
-              <div className="flex items-center mt-2 text-xs text-gray-500">
-                <span>{summary.total_questions} questions × {modelCount} models</span>
-              </div>
+              <div className="text-xs text-gray-500 mt-1">Average</div>
             </div>
           </div>
         )}

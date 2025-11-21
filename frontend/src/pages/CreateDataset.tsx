@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, Sparkles, Search, Edit2, Check, X, Database, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Sparkles, Search, Edit2, Check, Database, AlertCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { api } from '../services/api';
 import { LLM_PROVIDERS, LLM_MODELS } from '../types';
@@ -160,16 +160,19 @@ export const CreateDataset: React.FC = () => {
       }
 
       if (fetchedQuestions.length > 0) {
-        const generatedQuestions: Question[] = fetchedQuestions.map((q, i) => ({
+        // Limit to the requested number of questions
+        const limitedQuestions = fetchedQuestions.slice(0, numQuestions);
+
+        const generatedQuestions: Question[] = limitedQuestions.map((q, i) => ({
           id: q.id || (Date.now() + i + ''),
           question: q.question,
           expected_answer: q.expected_answer || '',
-          context: q.context || '',
+          context: q.context || '',  // Context should now be filename from backend
           editing: false
         }));
 
         setQuestions([...generatedQuestions, ...questions]);
-        alert(`Successfully generated ${fetchedQuestions.length} questions!`);
+        alert(`Successfully generated ${limitedQuestions.length} questions!`);
       } else {
         alert('Questions are being generated in the background. Please check back in a moment.');
       }
@@ -288,7 +291,7 @@ export const CreateDataset: React.FC = () => {
         });
       }
 
-      navigate(`/workspaces/${workspaceId}`);
+      navigate(`/datasets/${dataset.id}`);
     } catch (error: any) {
       console.error('Failed to create dataset:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Unknown error';
@@ -653,11 +656,7 @@ export const CreateDataset: React.FC = () => {
                           ) : (
                             <div className="text-sm text-gray-600">
                               {q.context ? (
-                                q.context.length > 100 ? (
-                                  <span title={q.context}>{q.context.substring(0, 100)}...</span>
-                                ) : (
-                                  q.context
-                                )
+                                <span title={q.context}>{q.context}</span>
                               ) : (
                                 <span className="text-gray-400">None</span>
                               )}

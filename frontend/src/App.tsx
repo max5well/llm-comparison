@@ -13,6 +13,9 @@ import { DatasetDetail } from './pages/DatasetDetail';
 import { CreateEvaluation } from './pages/CreateEvaluation';
 import { Results } from './pages/Results';
 import { Settings } from './pages/Settings';
+import { DashboardHome } from './pages/DashboardHome';
+import { EvaluationWaiting } from './pages/EvaluationWaiting';
+import { HumanRating } from './pages/HumanRating';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -27,6 +30,15 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardHome />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/"
@@ -87,6 +99,24 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateEvaluation />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/evaluations/:id/waiting"
+          element={
+            <ProtectedRoute>
+              <EvaluationWaiting />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/evaluations/:id/rating"
+          element={
+            <ProtectedRoute>
+              <HumanRating />
             </ProtectedRoute>
           }
         />

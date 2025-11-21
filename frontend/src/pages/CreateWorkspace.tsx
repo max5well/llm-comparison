@@ -1,565 +1,355 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Cloud,
-  Upload,
-  Settings,
-  CheckCircle,
-  Database,
-  FileText,
-  DollarSign,
-} from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { api } from '../services/api';
+import {
+  ArrowLeft,
+  ArrowRight,
+  CloudUpload,
+  Database,
+  ShieldCheck,
+  Info,
+} from 'lucide-react';
 import { EMBEDDING_PROVIDERS, EMBEDDING_MODELS } from '../types';
 
-type Step = 1 | 2 | 3 | 4;
-type DataSource = 'google-drive' | 'upload' | null;
+const flowSteps = [
+  { label: 'Data Source', description: 'Connect or upload files' },
+  { label: 'Chunking Settings', description: 'Configure embeddings' },
+  { label: 'Review & Create', description: 'Confirm workspace' },
+];
 
-interface WorkspaceFormData {
-  name: string;
-  description: string;
-  data_source: string;
-  embedding_provider: string;
-  embedding_model: string;
-  chunk_size: number;
-  chunk_overlap: number;
-}
-
-interface EmbeddingStats {
-  filesSelected: number;
-  estimatedChunks: number;
-  estimatedCost: number;
-  estimatedTimeMinutes: number;
-}
+const supportedFormats = [
+  '.pdf', '.docx', '.doc', '.pptx', '.txt', '.md', '.html', '.csv', '.xlsx', '.json',
+  '.py', '.js', '.ts', '.java', '.cpp', '.go', '.rb', '.php', '.swift',
+  '.yaml', '.xml', '.css', '.rtf', '.odt', '+20 more'
+];
 
 export const CreateWorkspace: React.FC = () => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState<Step>(1);
-  const [dataSource, setDataSource] = useState<DataSource>(null);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState<EmbeddingStats>({
-    filesSelected: 0,
-    estimatedChunks: 0,
-    estimatedCost: 0,
-    estimatedTimeMinutes: 0,
-  });
-
-  const [formData, setFormData] = useState<WorkspaceFormData>({
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
-    data_source: 'manual',
     embedding_provider: 'openai',
     embedding_model: 'text-embedding-3-small',
-    chunk_size: 1000,
+    chunk_size: 1024,
     chunk_overlap: 200,
   });
+  const [files, setFiles] = useState<File[]>([]);
+  const [dataSource, setDataSource] = useState<'upload' | 'drive'>('upload');
+  const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const chunkLabel = `${formData.chunk_size} tokens`;
+  const formattedSize = files.length
+    ? `${(files.reduce((sum, file) => sum + file.size, 0) / (1024 * 1024)).toFixed(1)} MB`
+    : '0.0 MB';
 
-  const calculateStats = (files: File[]) => {
-    // Rough estimates: 1 page ≈ 500 tokens, cost varies by model
-    const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-    const estimatedTokens = Math.ceil(totalSize / 4); // rough estimate: 4 bytes per token
-    const estimatedChunks = Math.ceil(estimatedTokens / formData.chunk_size);
-
-    // Cost estimation based on embedding model (per 1M tokens)
-    const costPer1M: Record<string, number> = {
-      'text-embedding-3-small': 0.02,
-      'text-embedding-3-large': 0.13,
-      'text-embedding-ada-002': 0.10,
-    };
-
-    const costRate = costPer1M[formData.embedding_model] || 0.02;
-    const estimatedCost = (estimatedTokens / 1000000) * costRate;
-
-    // Estimate processing time: ~1000 tokens/second for embedding, ~500 tokens/second for document parsing
-    const processingSeconds = (estimatedTokens / 500) + (estimatedChunks * 0.5); // parsing + embedding overhead
-    const estimatedTimeMinutes = Math.ceil(processingSeconds / 60);
-
-    setStats({
-      filesSelected: files.length,
-      estimatedChunks,
-      estimatedCost,
-      estimatedTimeMinutes,
-    });
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setSelectedFiles(files);
-    calculateStats(files);
-  };
-
-  const handleGoogleDriveConnect = () => {
-    // TODO: Implement Google OAuth flow
-    alert('Google Drive integration coming soon! For now, please use file upload.');
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files) return;
+    const incoming = Array.from(event.target.files);
+    setFiles((prev) => [...prev, ...incoming]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleContinue = () => {
-    if (currentStep === 1 && !dataSource) {
-      alert('Please select a data source');
+    if (currentStep === 1 && dataSource === 'upload' && files.length === 0) {
+      alert('Please upload at least one document.');
       return;
     }
-    if (currentStep === 1 && dataSource === 'upload' && selectedFiles.length === 0) {
-      alert('Please select files to upload');
-      return;
-    }
-    if (currentStep < 4) {
-      setCurrentStep((currentStep + 1) as Step);
+    if (currentStep < 3) {
+      setCurrentStep(currentStep + 1);
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep((currentStep - 1) as Step);
+      setCurrentStep(currentStep - 1);
     }
   };
 
-  const handleSubmit = async () => {
+  const handleCreate = async () => {
     if (!formData.name) {
-      alert('Please enter a workspace name');
+      alert('Please provide a workspace name.');
       return;
     }
-
     setLoading(true);
     try {
-      // Create workspace
       const workspace = await api.createWorkspace({
         ...formData,
-        data_source: dataSource === 'google-drive' ? 'google_drive' : 'manual',
+        data_source: 'manual',
       });
-
-      // Upload files if manual upload
-      if (dataSource === 'upload' && selectedFiles.length > 0) {
-        for (const file of selectedFiles) {
+      if (files.length > 0) {
+        for (const file of files) {
           await api.uploadDocument(workspace.id, file);
         }
       }
-
       navigate(`/workspaces/${workspace.id}`);
     } catch (error) {
       console.error('Failed to create workspace:', error);
-      alert('Failed to create workspace. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStepProgress = () => {
-    return (currentStep / 4) * 100;
-  };
-
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Create RAG Workspace</h1>
-          <p className="text-gray-600 mt-2">Set up your document collection and configure RAG parameters</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 py-12">
+        <div className="max-w-6xl mx-auto px-4 space-y-10">
+          <header>
+            <p className="text-xs uppercase tracking-[0.5em] text-gray-400 mb-2">Create Workspace</p>
+            <h1 className="text-4xl font-bold text-gray-900 mb-1">Build a RAG workspace in a few guided steps</h1>
+            <p className="text-gray-600">Upload documents, configure embeddings, and confirm your setup.</p>
+          </header>
 
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">
-              Step {currentStep}: {
-                currentStep === 1 ? 'Data Source' :
-                currentStep === 2 ? 'Embedding Configuration' :
-                currentStep === 3 ? 'Workspace Details' :
-                'Review & Create'
-              }
-            </span>
-            <span className="text-sm font-medium text-gray-700">{Math.round(getStepProgress())}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${getStepProgress()}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-500 mt-2">Connect your documents</p>
-        </div>
+          <div className="bg-white rounded-3xl border border-gray-200 shadow-xl p-6 space-y-6">
+            <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-gray-500">
+              {flowSteps.map((step, index) => (
+                <React.Fragment key={step.label}>
+                  <div
+                    className={`flex items-center gap-3 rounded-full px-4 py-2 ${
+                      currentStep === index + 1
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    <span>{index + 1}</span>
+                    <div className="text-left">
+                      <div>{step.label}</div>
+                      <div className="text-xs">{step.description}</div>
+                    </div>
+                  </div>
+                  {index < flowSteps.length - 1 && <div className="w-6 h-px bg-gray-200" />}
+                </React.Fragment>
+              ))}
+            </div>
 
-        {/* Steps Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 min-h-[500px]">
-          {/* Step 1: Data Source */}
-          {currentStep === 1 && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Google Drive Option */}
-                <div
-                  className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
-                    dataSource === 'google-drive'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setDataSource('google-drive')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className={`p-4 rounded-full ${
-                      dataSource === 'google-drive' ? 'bg-blue-100' : 'bg-gray-100'
-                    }`}>
-                      <Cloud className={`w-8 h-8 ${
-                        dataSource === 'google-drive' ? 'text-blue-600' : 'text-gray-600'
-                      }`} />
+            <div className="bg-white rounded-3xl border border-gray-200 p-6 space-y-6">
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <CloudUpload className="text-blue-600" />
+                    Select Data Source
+                  </div>
+                  <p className="text-sm text-gray-500">Choose how to add documents to your workspace.</p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <button
+                      className={`flex flex-col gap-1 rounded-2xl border p-4 text-left text-sm ${
+                        dataSource === 'upload'
+                          ? 'border-blue-500 bg-blue-50 text-gray-900 shadow'
+                          : 'border-gray-200 bg-white text-gray-600'
+                      }`}
+                      onClick={() => setDataSource('upload')}
+                    >
+                      <span className="text-lg font-semibold">Upload files</span>
+                      <span className="text-xs">Batch upload (26+ formats)</span>
+                    </button>
+                    <button
+                      className="flex flex-col gap-1 rounded-2xl border border-gray-200 p-4 text-left text-sm bg-white text-gray-400 cursor-not-allowed"
+                      disabled
+                    >
+                      <span className="text-lg font-semibold">Google Drive</span>
+                      <span className="text-xs">Coming soon</span>
+                    </button>
+                  </div>
+                    <label className="block border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer hover:border-blue-500">
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleFileChange}
+                        ref={fileInputRef}
+                        accept=".pdf,.docx,.doc,.txt,.md,.markdown,.text,.html,.htm,.csv,.xlsx,.xls,.json,.pptx,.ppt,.rtf,.odt,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.h,.cs,.go,.rb,.php,.swift,.kt,.rs,.sql,.sh,.bash,.yaml,.yml,.xml,.css,.scss,.less"
+                      />
+                      <div className="flex flex-col items-center gap-2">
+                      <CloudUpload className="text-blue-500" size={32} />
+                      <p className="text-sm text-gray-500">Drag & drop files or browse</p>
+                      <p className="text-xs text-gray-400">
+                        {files.length} files selected · {formattedSize}
+                      </p>
+                    </div>
+                  </label>
+                  <div className="mt-8 p-6 bg-gray-50 rounded-xl">
+                    <div className="flex items-start space-x-3">
+                      <Info className="text-blue-500 mt-0.5" size={16} />
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2">Supported File Types</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {supportedFormats.map((format) => (
+                            <span key={format} className="px-2 py-1 bg-white border border-gray-200 rounded text-xs">
+                              {format}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {currentStep === 2 && (
+                <div className="space-y-5">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <Database className="text-blue-600" />
+                    Chunking Settings
+                  </div>
+                  <p className="text-sm text-gray-500">Fine-tune how your documents are chunked and embedded.</p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="flex justify-between text-sm text-gray-600">
+                        <span>Chunk size</span>
+                        <span className="font-semibold text-gray-900">{formData.chunk_size}</span>
+                      </label>
+                      <input
+                        type="range"
+                        min={256}
+                        max={2048}
+                        step={64}
+                        value={formData.chunk_size}
+                        onChange={(e) => setFormData({ ...formData, chunk_size: Number(e.target.value) })}
+                        className="w-full mt-2"
+                      />
+                      <p className="text-xs text-gray-400">Max tokens in a chunk (e.g., 1024 ≈ 750 words).</p>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Google Drive</h3>
-                      <p className="text-sm text-gray-500 mt-1">Connect to your Google Drive account</p>
+                      <label className="flex justify-between text-sm text-gray-600">
+                        <span>Chunk overlap</span>
+                        <span className="font-semibold text-gray-900">{formData.chunk_overlap}</span>
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={512}
+                        step={16}
+                        value={formData.chunk_overlap}
+                        onChange={(e) => setFormData({ ...formData, chunk_overlap: Number(e.target.value) })}
+                        className="w-full mt-2"
+                      />
+                      <p className="text-xs text-gray-400">Tokens overlapping to retain context.</p>
                     </div>
-                    {dataSource === 'google-drive' && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleGoogleDriveConnect();
-                        }}
-                        className="btn-secondary w-full"
+                  </div>
+                  <div className="grid gap-4">
+                    <div>
+                      <label className="text-sm text-gray-700">Embedding provider</label>
+                      <select
+                        value={formData.embedding_provider}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            embedding_provider: e.target.value,
+                            embedding_model: EMBEDDING_MODELS[e.target.value][0],
+                          })
+                        }
+                        className="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                       >
-                        Connect Google Drive
-                      </button>
-                    )}
-                    <p className="text-xs text-amber-600 font-medium">Coming soon</p>
-                  </div>
-                </div>
-
-                {/* Upload Files Option */}
-                <div
-                  className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
-                    dataSource === 'upload'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => setDataSource('upload')}
-                >
-                  <div className="flex flex-col items-center text-center space-y-4">
-                    <div className={`p-4 rounded-full ${
-                      dataSource === 'upload' ? 'bg-blue-100' : 'bg-gray-100'
-                    }`}>
-                      <Upload className={`w-8 h-8 ${
-                        dataSource === 'upload' ? 'text-blue-600' : 'text-gray-600'
-                      }`} />
+                        {EMBEDDING_PROVIDERS.map((provider) => (
+                          <option key={provider.value} value={provider.value}>
+                            {provider.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">Upload Files</h3>
-                      <p className="text-sm text-gray-500 mt-1">Upload documents, code, spreadsheets & more</p>
+                      <label className="text-sm text-gray-700">Embedding model</label>
+                      <select
+                        value={formData.embedding_model}
+                        onChange={(e) => setFormData({ ...formData, embedding_model: e.target.value })}
+                        className="w-full border border-gray-200 rounded-2xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      >
+                        {EMBEDDING_MODELS[formData.embedding_provider]?.map((model) => (
+                          <option key={model} value={model}>
+                            {model}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                    {dataSource === 'upload' && (
-                      <div className="w-full">
-                        <label className="btn-secondary w-full cursor-pointer block">
-                          <input
-                            type="file"
-                            multiple
-                            accept=".pdf,.txt,.docx,.html,.htm,.csv,.xlsx,.xls,.md,.markdown,.json,.xml,.py,.js,.ts,.jsx,.tsx,.java,.cpp,.c,.cs,.rb,.go,.rs,.php,.sh,.yaml,.yml"
-                            onChange={handleFileSelect}
-                            className="hidden"
-                          />
-                          Select files
-                        </label>
-                        {selectedFiles.length > 0 && (
-                          <p className="text-sm text-gray-600 mt-2">
-                            {selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} selected
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* File List */}
-              {selectedFiles.length > 0 && (
-                <div className="mt-6 border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Selected Files
-                  </h4>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {selectedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <span className="text-sm text-gray-700 truncate">{file.name}</span>
-                        <span className="text-xs text-gray-500 ml-2">
-                          {(file.size / 1024).toFixed(1)} KB
-                        </span>
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Step 2: Embedding Configuration */}
-          {currentStep === 2 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <Settings className="w-5 h-5 mr-2" />
-                  Embedding Configuration
-                </h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  Configure how your documents will be processed and embedded
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {currentStep === 3 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+                    <ShieldCheck className="text-blue-600" />
+                    Review & Create
+                  </div>
                 <div>
-                  <label className="label">Embedding Provider *</label>
-                  <select
-                    value={formData.embedding_provider}
-                    onChange={(e) => {
-                      const provider = e.target.value;
-                      setFormData({
-                        ...formData,
-                        embedding_provider: provider,
-                        embedding_model: EMBEDDING_MODELS[provider][0],
-                      });
-                      if (selectedFiles.length > 0) {
-                        calculateStats(selectedFiles);
-                      }
-                    }}
-                    className="input"
-                  >
-                    {EMBEDDING_PROVIDERS.map((provider) => (
-                      <option key={provider.value} value={provider.value}>
-                        {provider.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="label">Embedding Model *</label>
-                  <select
-                    value={formData.embedding_model}
-                    onChange={(e) => {
-                      setFormData({ ...formData, embedding_model: e.target.value });
-                      if (selectedFiles.length > 0) {
-                        calculateStats(selectedFiles);
-                      }
-                    }}
-                    className="input"
-                  >
-                    {EMBEDDING_MODELS[formData.embedding_provider]?.map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="label">Chunk Size (tokens) *</label>
+                  <label className="text-sm font-semibold text-gray-700">Workspace name</label>
                   <input
-                    type="number"
-                    value={formData.chunk_size}
-                    onChange={(e) => {
-                      setFormData({ ...formData, chunk_size: parseInt(e.target.value) });
-                      if (selectedFiles.length > 0) {
-                        calculateStats(selectedFiles);
-                      }
-                    }}
-                    className="input"
-                    min={100}
-                    max={4000}
+                    type="text"
+                    value={formData.name}
+                    onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                    placeholder="Give your workspace a name"
+                    className="w-full border border-gray-200 rounded-2xl px-4 py-3 mt-1 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    500-800 for precision, 1000-1500 for context
-                  </p>
+                  <p className="text-xs text-gray-400 mt-1">Add a name so we can save and identify your workspace.</p>
                 </div>
-
-                <div>
-                  <label className="label">Chunk Overlap (tokens) *</label>
-                  <input
-                    type="number"
-                    value={formData.chunk_overlap}
-                    onChange={(e) => setFormData({ ...formData, chunk_overlap: parseInt(e.target.value) })}
-                    className="input"
-                    min={0}
-                    max={1000}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Typically 10-20% of chunk size
-                  </p>
-                </div>
-              </div>
-
-              {/* Embedding Stats */}
-              {selectedFiles.length > 0 && (
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <h4 className="font-medium text-gray-900 mb-4 flex items-center">
-                    <Database className="w-4 h-4 mr-2" />
-                    Estimated Embedding Stats
-                  </h4>
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{stats.filesSelected}</p>
-                      <p className="text-xs text-gray-600 mt-1">Files Selected</p>
+                  <p className="text-sm text-gray-500">Confirm your settings before launching.</p>
+                  <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Workspace name</span>
+                      <span className="font-semibold text-gray-900">{formData.name || 'Untitled workspace'}</span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{stats.estimatedChunks.toLocaleString()}</p>
-                      <p className="text-xs text-gray-600 mt-1">Estimated Chunks</p>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Description</span>
+                      <span className="font-semibold text-gray-900">{formData.description || 'No description yet'}</span>
                     </div>
-                    <div className="text-center flex flex-col items-center">
-                      <div className="flex items-center">
-                        <DollarSign className="w-5 h-5 text-blue-600" />
-                        <p className="text-2xl font-bold text-blue-600">{stats.estimatedCost.toFixed(4)}</p>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1">Estimated Cost (USD)</p>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Data source</span>
+                      <span className="font-semibold text-gray-900">
+                        {files.length > 0 ? `${files.length} file(s)` : 'No files uploaded'}
+                      </span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{stats.estimatedTimeMinutes}</p>
-                      <p className="text-xs text-gray-600 mt-1">Est. Time (min)</p>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Chunk size</span>
+                      <span className="font-semibold text-gray-900">{chunkLabel}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Chunk overlap</span>
+                      <span className="font-semibold text-gray-900">{formData.chunk_overlap}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Embedding model</span>
+                      <span className="font-semibold text-gray-900">{formData.embedding_model}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-4 text-center">
-                    Note: These are rough estimates based on file sizes. Actual values may vary.
-                  </p>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Step 3: Workspace Details */}
-          {currentStep === 3 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Workspace Details</h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  Give your workspace a name and description
-                </p>
-              </div>
-
-              <div>
-                <label className="label">Workspace Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="input"
-                  placeholder="e.g., Customer Support Documentation"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="label">Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="input"
-                  rows={4}
-                  placeholder="Brief description of this workspace and its purpose..."
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Review */}
-          {currentStep === 4 && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  Review & Create
-                </h3>
-                <p className="text-sm text-gray-600 mb-6">
-                  Review your configuration before creating the workspace
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Workspace Details</h4>
-                  <dl className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Name:</dt>
-                      <dd className="text-gray-900 font-medium">{formData.name || 'Not set'}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Description:</dt>
-                      <dd className="text-gray-900">{formData.description || 'None'}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Data Source:</dt>
-                      <dd className="text-gray-900 capitalize">{dataSource?.replace('-', ' ') || 'None'}</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <div className="border border-gray-200 rounded-lg p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Embedding Configuration</h4>
-                  <dl className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Provider:</dt>
-                      <dd className="text-gray-900 capitalize">{formData.embedding_provider}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Model:</dt>
-                      <dd className="text-gray-900">{formData.embedding_model}</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Chunk Size:</dt>
-                      <dd className="text-gray-900">{formData.chunk_size} tokens</dd>
-                    </div>
-                    <div className="flex justify-between">
-                      <dt className="text-gray-600">Chunk Overlap:</dt>
-                      <dd className="text-gray-900">{formData.chunk_overlap} tokens</dd>
-                    </div>
-                  </dl>
-                </div>
-
-                {selectedFiles.length > 0 && (
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Files to Upload</h4>
-                    <p className="text-sm text-gray-600">{selectedFiles.length} file(s) selected</p>
-                    <div className="mt-3 grid grid-cols-3 gap-4 text-center">
-                      <div>
-                        <p className="text-lg font-bold text-blue-600">{stats.filesSelected}</p>
-                        <p className="text-xs text-gray-600">Files</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-blue-600">{stats.estimatedChunks.toLocaleString()}</p>
-                        <p className="text-xs text-gray-600">Est. Chunks</p>
-                      </div>
-                      <div>
-                        <p className="text-lg font-bold text-blue-600">${stats.estimatedCost.toFixed(4)}</p>
-                        <p className="text-xs text-gray-600">Est. Cost</p>
-                      </div>
-                    </div>
-                  </div>
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={handleBack}
+                  disabled={currentStep === 1}
+                  className="px-5 py-3 rounded-2xl border border-gray-300 text-sm font-semibold text-gray-600 hover:border-gray-400 disabled:opacity-50"
+                >
+                  <ArrowLeft className="inline mr-1" />
+                  Back
+                </button>
+                {currentStep < 3 ? (
+                  <button
+                    onClick={handleContinue}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-semibold flex items-center gap-2 hover:bg-blue-700"
+                  >
+                    Continue
+                    <ArrowRight />
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleCreate}
+                    disabled={loading}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-semibold flex items-center gap-2 hover:bg-blue-700"
+                  >
+                    {loading ? 'Creating...' : 'Create workspace'}
+                    <ArrowRight />
+                  </button>
                 )}
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Navigation Buttons */}
-        <div className="mt-6 flex justify-between">
-          <button
-            onClick={currentStep === 1 ? () => navigate('/workspaces') : handleBack}
-            className="btn-secondary px-6"
-          >
-            {currentStep === 1 ? 'Cancel' : 'Back'}
-          </button>
-
-          {currentStep < 4 ? (
-            <button
-              onClick={handleContinue}
-              className="btn-primary px-8"
-            >
-              Continue
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={loading || !formData.name}
-              className="btn-primary px-8"
-            >
-              {loading ? 'Creating...' : 'Create Workspace'}
-            </button>
-          )}
+          </div>
         </div>
       </div>
     </Layout>
   );
 };
+

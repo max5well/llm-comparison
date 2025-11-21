@@ -76,7 +76,7 @@ export const Signup: React.FC = () => {
     try {
       await api.signup({ email });
       setSuccess('Account created! Redirecting to the dashboard...');
-      setTimeout(() => navigate('/'), 1200);
+      setTimeout(() => navigate('/dashboard'), 1200);
     } catch (err: any) {
       console.error(err);
       setError(err.response?.data?.detail || 'Unable to create your account right now.');
@@ -225,7 +225,7 @@ export const Signup: React.FC = () => {
                   <div className="space-y-2">
                     <p className="text-sm text-green-600 animate-pulse">{success}</p>
                     <Link
-                      to="/"
+                      to="/dashboard"
                       className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-2xl text-sm font-semibold hover:bg-blue-700 transition"
                     >
                       Continue to dashboard

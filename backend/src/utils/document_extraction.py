@@ -34,6 +34,10 @@ class DocumentExtractor:
             return DocumentExtractor._extract_from_pdf(file_path)
         elif file_ext == '.docx':
             return DocumentExtractor._extract_from_docx(file_path)
+        elif file_ext == '.doc':
+            return DocumentExtractor._extract_from_doc(file_path)
+        elif file_ext in ['.pptx', '.ppt']:
+            return DocumentExtractor._extract_from_pptx(file_path)
         elif file_ext in ['.txt', '.md', '.text', '.markdown']:
             return DocumentExtractor._extract_from_text(file_path)
         elif file_ext in ['.html', '.htm']:
@@ -44,6 +48,10 @@ class DocumentExtractor:
             return DocumentExtractor._extract_from_excel(file_path)
         elif file_ext == '.json':
             return DocumentExtractor._extract_from_json(file_path)
+        elif file_ext == '.rtf':
+            return DocumentExtractor._extract_from_rtf(file_path)
+        elif file_ext == '.odt':
+            return DocumentExtractor._extract_from_odt(file_path)
         elif file_ext in ['.py', '.js', '.ts', '.tsx', '.jsx', '.java', '.cpp', '.c', '.h', '.cs', '.go', '.rb', '.php', '.swift', '.kt', '.rs', '.sql', '.sh', '.bash', '.yaml', '.yml', '.xml', '.css', '.scss', '.less']:
             return DocumentExtractor._extract_from_code(file_path)
         else:
@@ -175,6 +183,129 @@ class DocumentExtractor:
             )
         except Exception as e:
             raise Exception(f"Error extracting DOCX: {str(e)}")
+
+    @staticmethod
+    def _extract_from_doc(file_path: str) -> str:
+        """Extract text from DOC file (older Word format)."""
+        try:
+            # Try using textract first (if available)
+            try:
+                import textract
+                return textract.process(file_path).decode('utf-8')
+            except ImportError:
+                pass
+            
+            # Fallback: Try using antiword via subprocess (if available)
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ['antiword', file_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                if result.returncode == 0:
+                    return result.stdout
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                pass
+            
+            # Final fallback: Try using python-docx2txt or similar
+            # For now, raise an informative error
+            raise ImportError(
+                "DOC file extraction requires additional tools. "
+                "Install textract (pip install textract) or antiword for DOC support. "
+                "Alternatively, convert DOC to DOCX format."
+            )
+        except Exception as e:
+            if isinstance(e, ImportError):
+                raise
+            raise Exception(f"Error extracting DOC: {str(e)}")
+
+    @staticmethod
+    def _extract_from_pptx(file_path: str) -> str:
+        """Extract text from PPTX or PPT file."""
+        try:
+            from pptx import Presentation
+
+            prs = Presentation(file_path)
+            text_runs = []
+            
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, "text") and shape.text.strip():
+                        text_runs.append(shape.text.strip())
+                    # Also check for tables
+                    if hasattr(shape, "table"):
+                        for row in shape.table.rows:
+                            for cell in row.cells:
+                                if cell.text.strip():
+                                    text_runs.append(cell.text.strip())
+            
+            return "\n\n".join(text_runs) if text_runs else ""
+
+        except ImportError:
+            raise ImportError(
+                "python-pptx is required for PowerPoint extraction. "
+                "Install it with: pip install python-pptx"
+            )
+        except Exception as e:
+            # For .ppt (older format), python-pptx might not work
+            # Provide helpful error message
+            if file_path.lower().endswith('.ppt'):
+                raise Exception(
+                    f"Error extracting PPT: {str(e)}. "
+                    "Note: .ppt (older PowerPoint format) support is limited. "
+                    "Please convert to .pptx format for best results."
+                )
+            raise Exception(f"Error extracting PPTX: {str(e)}")
+
+    @staticmethod
+    def _extract_from_rtf(file_path: str) -> str:
+        """Extract text from RTF file."""
+        try:
+            # Try using striprtf or pyth for RTF parsing
+            try:
+                from striprtf.striprtf import rtf_to_text
+                with open(file_path, 'rb') as f:
+                    rtf_content = f.read()
+                return rtf_to_text(rtf_content.decode('utf-8', errors='ignore'))
+            except ImportError:
+                pass
+            
+            # Fallback: Basic text extraction (may include RTF markup)
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+                # Simple RTF text extraction (remove RTF control words)
+                import re
+                # Remove RTF control words and groups
+                text = re.sub(r'\\[a-z]+\d*\s?', '', content)
+                text = re.sub(r'\{[^}]*\}', '', text)
+                return text.strip()
+        except Exception as e:
+            raise Exception(f"Error extracting RTF: {str(e)}")
+
+    @staticmethod
+    def _extract_from_odt(file_path: str) -> str:
+        """Extract text from ODT (OpenDocument Text) file."""
+        try:
+            # ODT files are ZIP archives containing XML
+            import zipfile
+            from xml.etree import ElementTree as ET
+            
+            with zipfile.ZipFile(file_path, 'r') as odt:
+                # Read content.xml from the ODT archive
+                content = odt.read('content.xml')
+                root = ET.fromstring(content)
+                
+                # Extract text from all text nodes
+                text_parts = []
+                for elem in root.iter():
+                    if elem.text and elem.text.strip():
+                        text_parts.append(elem.text.strip())
+                
+                return "\n\n".join(text_parts)
+        except Exception as e:
+            raise Exception(f"Error extracting ODT: {str(e)}")
 
     @staticmethod
     def _extract_from_text(file_path: str) -> str:
@@ -328,7 +459,8 @@ class DocumentExtractor:
         """
         supported_extensions = [
             # Documents
-            '.pdf', '.docx', '.txt', '.md', '.markdown', '.text',
+            '.pdf', '.docx', '.doc', '.txt', '.md', '.markdown', '.text',
+            '.pptx', '.ppt', '.rtf', '.odt',
             # Web
             '.html', '.htm',
             # Data

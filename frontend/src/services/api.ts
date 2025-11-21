@@ -11,6 +11,7 @@ import type {
   CreateEvaluationRequest,
   EvaluationSummary,
   EvaluationDetails,
+  TestQuestion,
 } from '../types';
 
 class ApiClient {
@@ -87,6 +88,11 @@ class ApiClient {
     return response.data;
   }
 
+  async updateWorkspace(workspaceId: string, data: Partial<CreateWorkspaceRequest>): Promise<Workspace> {
+    const response = await this.client.patch<Workspace>(`/workspace/${workspaceId}`, data);
+    return response.data;
+  }
+
   async deleteWorkspace(workspaceId: string): Promise<void> {
     await this.client.delete(`/workspace/${workspaceId}`);
   }
@@ -136,6 +142,11 @@ class ApiClient {
   // RAG endpoints
   async processDocument(documentId: string): Promise<void> {
     await this.client.post(`/rag/${documentId}/process`);
+  }
+
+  async getDocumentChunks(documentId: string): Promise<any[]> {
+    const response = await this.client.get(`/rag/document/${documentId}/chunks`);
+    return response.data;
   }
 
   async queryRAG(
@@ -204,6 +215,13 @@ class ApiClient {
     const response = await this.client.post<Dataset>(
       '/evaluation/dataset/generate-synthetic',
       params
+    );
+    return response.data;
+  }
+
+  async getDataset(datasetId: string): Promise<Dataset> {
+    const response = await this.client.get<Dataset>(
+      `/evaluation/dataset/${datasetId}`
     );
     return response.data;
   }

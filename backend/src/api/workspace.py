@@ -160,6 +160,109 @@ async def get_workspace_endpoint(
     )
 
 
+@router.patch("/{workspace_id}", response_model=WorkspaceResponse)
+async def update_workspace_endpoint(
+    workspace_id: str,
+    request: dict,
+    db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None
+):
+    """
+    Update workspace settings (chunk_size, chunk_overlap, embedding_model, embedding_provider).
+    If chunking or embedding settings change, all completed documents will be reprocessed.
+    """
+    workspace = get_workspace(db, UUID(workspace_id))
+    if not workspace:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Workspace not found"
+        )
+
+    # Store old values to detect changes
+    old_chunk_size = workspace.chunk_size
+    old_chunk_overlap = workspace.chunk_overlap
+    old_embedding_model = workspace.embedding_model
+    old_embedding_provider = workspace.embedding_provider
+
+    # Update allowed fields
+    chunking_changed = False
+    embedding_changed = False
+    
+    if "chunk_size" in request:
+        workspace.chunk_size = request["chunk_size"]
+        if request["chunk_size"] != old_chunk_size:
+            chunking_changed = True
+    if "chunk_overlap" in request:
+        workspace.chunk_overlap = request["chunk_overlap"]
+        if request["chunk_overlap"] != old_chunk_overlap:
+            chunking_changed = True
+    if "embedding_model" in request:
+        workspace.embedding_model = request["embedding_model"]
+        if request["embedding_model"] != old_embedding_model:
+            embedding_changed = True
+    if "embedding_provider" in request:
+        workspace.embedding_provider = request["embedding_provider"]
+        if request["embedding_provider"] != old_embedding_provider:
+            embedding_changed = True
+    if "name" in request:
+        workspace.name = request["name"]
+    if "description" in request:
+        workspace.description = request["description"]
+
+    # Validate chunk_overlap is less than chunk_size
+    if workspace.chunk_overlap >= workspace.chunk_size:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"chunk_overlap ({workspace.chunk_overlap}) must be less than chunk_size ({workspace.chunk_size})"
+        )
+
+    # If chunking or embedding settings changed, mark all completed documents for reprocessing
+    if chunking_changed or embedding_changed:
+        from src.db.queries import get_workspace_documents, update_document_status
+        from src.db.models import Chunk
+        
+        completed_documents = get_workspace_documents(db, UUID(workspace_id))
+        completed_documents = [doc for doc in completed_documents if doc.processing_status == 'completed']
+        
+        # Delete all chunks and mark documents as pending for reprocessing
+        for document in completed_documents:
+            # Delete chunks from database
+            db.query(Chunk).filter(Chunk.document_id == document.id).delete()
+            # Reset chunk count
+            document.total_chunks = 0
+            # Mark as pending for reprocessing
+            update_document_status(db, document.id, "pending")
+        
+        db.commit()
+        
+        # Trigger reprocessing of all marked documents in background
+        if background_tasks and completed_documents:
+            from src.api.rag import process_document_background
+            for document in completed_documents:
+                background_tasks.add_task(
+                    process_document_background,
+                    document.id,
+                    UUID(workspace_id),
+                    db
+                )
+
+    db.commit()
+    db.refresh(workspace)
+
+    return WorkspaceResponse(
+        id=str(workspace.id),
+        user_id=str(workspace.user_id),
+        name=workspace.name,
+        description=workspace.description,
+        embedding_model=workspace.embedding_model,
+        embedding_provider=workspace.embedding_provider,
+        chunk_size=workspace.chunk_size,
+        chunk_overlap=workspace.chunk_overlap,
+        created_at=workspace.created_at.isoformat(),
+        updated_at=workspace.updated_at.isoformat()
+    )
+
+
 @router.delete("/{workspace_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_workspace_endpoint(
     workspace_id: str,
@@ -198,15 +301,16 @@ async def upload_document(
             detail="Workspace not found"
         )
 
-    # Check file type
-    allowed_types = settings.allowed_file_types.split(',')
-    file_ext = os.path.splitext(file.filename)[1][1:]  # Remove the dot
-
-    if file_ext not in allowed_types:
+    # Check file type using DocumentExtractor's supported types
+    from src.utils.document_extraction import DocumentExtractor
+    
+    if not DocumentExtractor.is_supported_file(file.filename):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type not supported. Allowed types: {allowed_types}"
+            detail=f"File type not supported. Please upload a supported file format."
         )
+    
+    file_ext = os.path.splitext(file.filename)[1][1:]  # Remove the dot
 
     # Create upload directory
     upload_dir = f"./data/uploads/{workspace_id}"
