@@ -516,13 +516,13 @@ async def create_evaluation_endpoint(
     )
 
     # Run evaluation in background
+    # Don't pass db session - background task will create its own
     background_tasks.add_task(
         run_evaluation_background,
         evaluation.id,
         request.models_to_test,
         request.judge_model,
-        request.judge_provider,
-        db
+        request.judge_provider
     )
 
     return EvaluationResponse(
@@ -542,15 +542,18 @@ async def run_evaluation_background(
     evaluation_id: UUID,
     models_to_test: List[Dict[str, str]],
     judge_model: str,
-    judge_provider: str,
-    db: Session
+    judge_provider: str
 ):
     """
     Background task to run evaluation.
 
     This will be a simplified version. Full implementation would be more complex.
     """
-    try:
+    # Create a new database session for the background task
+    from src.db.database import get_db_context
+    
+    with get_db_context() as db:
+        try:
         # Update status
         update_evaluation_status(db, evaluation_id, "running", started_at=datetime.utcnow())
 
@@ -758,19 +761,20 @@ Answer:"""
         except Exception as summary_error:
             print(f"Error calculating summary metrics: {str(summary_error)}")
 
-        # Mark as completed
-        update_evaluation_status(
-            db, evaluation_id, "completed",
-            completed_at=datetime.utcnow(),
-            progress=100
-        )
-
-    except Exception as e:
-        update_evaluation_status(
-            db, evaluation_id, "failed",
-            error_message=str(e)
-        )
-        print(f"Error running evaluation: {str(e)}")
+            # Mark as completed
+            update_evaluation_status(
+                db, evaluation_id, "completed",
+                completed_at=datetime.utcnow(),
+                progress=100
+            )
+        except Exception as e:
+            update_evaluation_status(
+                db, evaluation_id, "failed",
+                error_message=str(e)
+            )
+            print(f"Error running evaluation: {str(e)}")
+            import traceback
+            traceback.print_exc()
 
 
 @router.get("/{evaluation_id}", response_model=EvaluationResponse)
