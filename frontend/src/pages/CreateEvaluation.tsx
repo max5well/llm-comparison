@@ -68,6 +68,27 @@ export const CreateEvaluation: React.FC = () => {
     }
   };
 
+  const handleReviewDataset = async () => {
+    if (!formData.dataset_id) return;
+    
+    setLoadingDatasetReview(true);
+    setShowDatasetReview(true);
+    try {
+      const [dataset, questions] = await Promise.all([
+        api.getDataset(formData.dataset_id),
+        api.getDatasetQuestions(formData.dataset_id)
+      ]);
+      setDatasetDetails(dataset);
+      setDatasetQuestions(questions);
+    } catch (error) {
+      console.error('Failed to load dataset details:', error);
+      setDatasetDetails(null);
+      setDatasetQuestions([]);
+    } finally {
+      setLoadingDatasetReview(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!workspaceId) return;
