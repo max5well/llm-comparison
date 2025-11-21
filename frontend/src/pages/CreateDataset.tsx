@@ -45,6 +45,9 @@ export const CreateDataset: React.FC = () => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  // Documents for context selection
+  const [documents, setDocuments] = useState<Array<{id: string, filename: string}>>([]);
 
   const filteredQuestions = questions.filter(q =>
     q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,6 +78,20 @@ export const CreateDataset: React.FC = () => {
 
     fetchStats();
     fetchApiKeys();
+    
+    // Fetch documents for context selection
+    const fetchDocuments = async () => {
+      if (workspaceId) {
+        try {
+          const docs = await api.listDocuments(workspaceId);
+          setDocuments(docs.map(doc => ({ id: doc.id, filename: doc.filename })));
+        } catch (error) {
+          console.error('Failed to fetch documents:', error);
+        }
+      }
+    };
+    
+    fetchDocuments();
   }, [workspaceId]);
 
   const addQuestion = () => {
@@ -646,19 +663,34 @@ export const CreateDataset: React.FC = () => {
                         </td>
                         <td>
                           {q.editing ? (
-                            <textarea
-                              value={q.context || ''}
-                              onChange={(e) => updateQuestion(q.id, { context: e.target.value })}
-                              className="input text-sm"
-                              rows={2}
-                              placeholder="Context/reference (optional)..."
-                            />
+                            <div className="space-y-1">
+                              <select
+                                value={q.context || ''}
+                                onChange={(e) => updateQuestion(q.id, { context: e.target.value })}
+                                className="input text-sm"
+                              >
+                                <option value="">Select document...</option>
+                                {documents.map((doc) => (
+                                  <option key={doc.id} value={doc.filename}>
+                                    {doc.filename}
+                                  </option>
+                                ))}
+                              </select>
+                              {documents.length === 0 && (
+                                <p className="text-xs text-gray-500">
+                                  No documents available. Upload documents to workspace first.
+                                </p>
+                              )}
+                            </div>
                           ) : (
-                            <div className="text-sm text-gray-600">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
                               {q.context ? (
-                                <span title={q.context}>{q.context}</span>
+                                <>
+                                  <FileText size={14} className="text-blue-500" />
+                                  <span title={q.context} className="font-medium">{q.context}</span>
+                                </>
                               ) : (
-                                <span className="text-gray-400">None</span>
+                                <span className="text-gray-400">No reference</span>
                               )}
                             </div>
                           )}

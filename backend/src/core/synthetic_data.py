@@ -118,18 +118,26 @@ Generate exactly {num_questions} question(s). Return ONLY the JSON array, no oth
         # Create SyntheticQuestion objects
         synthetic_questions = []
         for idx, q_data in enumerate(questions_data):
+            # Store chunk metadata with each question so we can track the source document
+            question_metadata = {
+                'question_type': q_data.get('question_type', 'unknown'),
+                'difficulty': q_data.get('difficulty', 'medium'),
+                'generation_model': self.model,
+                'generation_provider': self.provider.provider_name,
+                'chunk_metadata': chunk_metadata or {},
+                'index': idx
+            }
+            
+            # Extract filename from chunk_metadata if available for easier access
+            source_filename = 'Document'
+            if chunk_metadata and isinstance(chunk_metadata, dict):
+                source_filename = chunk_metadata.get('document_filename', 'Document')
+            
             synthetic_questions.append(SyntheticQuestion(
                 question=q_data.get('question', ''),
                 expected_answer=q_data.get('answer') if include_answers else None,
-                context=chunk,
-                metadata={
-                    'question_type': q_data.get('question_type', 'unknown'),
-                    'difficulty': q_data.get('difficulty', 'medium'),
-                    'generation_model': self.model,
-                    'generation_provider': self.provider.provider_name,
-                    'chunk_metadata': chunk_metadata or {},
-                    'index': idx
-                }
+                context=source_filename,  # Store filename instead of chunk content
+                metadata=question_metadata
             ))
 
         return synthetic_questions
@@ -156,15 +164,16 @@ Generate exactly {num_questions} question(s). Return ONLY the JSON array, no oth
         all_questions = []
 
         for idx, chunk in enumerate(chunks):
-            metadata = chunk_metadatas[idx] if chunk_metadatas else None
+            metadata = chunk_metadatas[idx] if chunk_metadatas and idx < len(chunk_metadatas) else None
 
             try:
                 questions = await self.generate_questions_from_chunk(
                     chunk=chunk,
                     num_questions=num_questions_per_chunk,
                     include_answers=include_answers,
-                    chunk_metadata=metadata
+                    chunk_metadata=metadata  # Pass metadata for this specific chunk
                 )
+                # Each question from this chunk will have the same chunk_metadata
                 all_questions.extend(questions)
             except Exception as e:
                 print(f"Error generating questions for chunk {idx}: {str(e)}")

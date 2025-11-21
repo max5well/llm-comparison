@@ -414,18 +414,16 @@ async def generate_synthetic_questions_background(
         # Limit total questions to a reasonable number (num_questions_per_chunk * expected_chunks)
         # But we'll let the frontend handle limiting to exact number
         # Save to database - use filename as context instead of chunk content
-        for idx, q in enumerate(questions):
-            # Extract filename from metadata if available
-            # Try multiple paths to find the filename
-            chunk_metadata = q.metadata.get('chunk_metadata', {})
-            if isinstance(chunk_metadata, dict):
-                filename = chunk_metadata.get('document_filename', None)
-            else:
-                filename = None
+        for q in questions:
+            # The context field should already contain the filename from SyntheticQuestion
+            # But let's also extract from metadata as a fallback to ensure accuracy
+            filename = q.context if q.context and q.context != 'Document' else None
             
-            # Fallback: try to get from chunk_metadatas list if available
-            if not filename and chunk_metadatas and idx < len(chunk_metadatas):
-                filename = chunk_metadatas[idx].get('document_filename', None)
+            # Try to get from metadata if context is not a valid filename
+            if not filename or filename == 'Document':
+                chunk_metadata = q.metadata.get('chunk_metadata', {})
+                if isinstance(chunk_metadata, dict):
+                    filename = chunk_metadata.get('document_filename', None)
             
             # Final fallback
             if not filename:
@@ -433,8 +431,22 @@ async def generate_synthetic_questions_background(
             
             # Ensure we only store the filename, not full paths or URLs
             # Extract just the filename if it's a path or URL
-            if '/' in filename or '\\' in filename:
-                filename = filename.split('/').pop() or filename.split('\\').pop() or filename
+            if '/' in filename:
+                filename = filename.split('/').pop() or filename
+            if '\\' in filename:
+                filename = filename.split('\\').pop() or filename
+            # Remove URL parameters
+            if '?' in filename:
+                filename = filename.split('?')[0]
+            if '#' in filename:
+                filename = filename.split('#')[0]
+            
+            # Ensure it looks like a filename (has an extension)
+            if not '.' in filename.split('/').pop().split('\\').pop():
+                # If it doesn't have an extension, try to get it from the document
+                chunk_metadata = q.metadata.get('chunk_metadata', {})
+                if isinstance(chunk_metadata, dict):
+                    filename = chunk_metadata.get('document_filename', filename)
             
             create_test_question(
                 db=db,
