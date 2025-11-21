@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Search, Trash2, X, Database, XCircle } from 'lucide-react';
+import { ArrowLeft, FileText, Search, Trash2, X, Database, XCircle, AlertCircle, CheckCircle } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api } from '../services/api';
@@ -47,6 +47,15 @@ export const WorkspaceDetail: React.FC = () => {
     embedding_model: 'text-embedding-3-small',
   });
   const [savingSettings, setSavingSettings] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalConfig, setConfirmModalConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    onCancel?: () => void;
+  } | null>(null);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -231,13 +240,30 @@ export const WorkspaceDetail: React.FC = () => {
     if (chunkingChanged || embeddingChanged) {
       const completedCount = documents.filter(doc => doc.processing_status === 'completed').length;
       if (completedCount > 0) {
-        const confirmed = confirm(
-          `Changing these settings will reprocess all ${completedCount} completed document(s). ` +
-          `This may take some time. Do you want to continue?`
-        );
-        if (!confirmed) return;
+        // Show confirmation modal instead of browser confirm
+        setConfirmModalConfig({
+          title: 'Reprocess Documents?',
+          message: `Changing these settings will reprocess all ${completedCount} completed document(s). This may take some time. Do you want to continue?`,
+          onConfirm: async () => {
+            setShowConfirmModal(false);
+            await saveSettingsAndReprocess();
+          },
+          onCancel: () => {
+            setShowConfirmModal(false);
+            setConfirmModalConfig(null);
+          }
+        });
+        setShowConfirmModal(true);
+        return;
       }
     }
+    
+    // No reprocessing needed, just save
+    await saveSettingsAndReprocess();
+  };
+
+  const saveSettingsAndReprocess = async () => {
+    if (!id || !workspace) return;
     
     setSavingSettings(true);
     try {
@@ -257,15 +283,33 @@ export const WorkspaceDetail: React.FC = () => {
         }, 1000);
       }
       
+      // Show success message
+      const chunkingChanged = 
+        settingsForm.chunk_size !== workspace.chunk_size ||
+        settingsForm.chunk_overlap !== workspace.chunk_overlap;
+      const embeddingChanged = 
+        settingsForm.embedding_provider !== workspace.embedding_provider ||
+        settingsForm.embedding_model !== workspace.embedding_model;
+      
       if (chunkingChanged || embeddingChanged) {
-        alert('Settings saved! All documents are being reprocessed with the new settings.');
+        setSuccessMessage('Settings saved! All documents are being reprocessed with the new settings.');
       } else {
-        alert('Settings saved successfully!');
+        setSuccessMessage('Settings saved successfully!');
       }
+      setShowSuccessAlert(true);
+      setTimeout(() => setShowSuccessAlert(false), 5000);
     } catch (error: any) {
       console.error('Failed to update workspace:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Unknown error';
-      alert(`Failed to update workspace settings: ${errorMessage}`);
+      setConfirmModalConfig({
+        title: 'Error',
+        message: `Failed to update workspace settings: ${errorMessage}`,
+        onConfirm: () => {
+          setShowConfirmModal(false);
+          setConfirmModalConfig(null);
+        }
+      });
+      setShowConfirmModal(true);
     } finally {
       setSavingSettings(false);
     }
@@ -823,6 +867,81 @@ export const WorkspaceDetail: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && confirmModalConfig && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  {confirmModalConfig.title === 'Error' ? (
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                      <AlertCircle className="text-red-600" size={20} />
+                    </div>
+                  ) : (
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <AlertCircle className="text-blue-600" size={20} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    {confirmModalConfig.title}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    {confirmModalConfig.message}
+                  </p>
+                  <div className="flex items-center justify-end space-x-3">
+                    <button
+                      onClick={() => {
+                        setShowConfirmModal(false);
+                        if (confirmModalConfig.onCancel) {
+                          confirmModalConfig.onCancel();
+                        }
+                        setConfirmModalConfig(null);
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirmModalConfig.onConfirm) {
+                          confirmModalConfig.onConfirm();
+                        }
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-white bg-blue-500 rounded-lg hover:bg-blue-600 transition"
+                    >
+                      {confirmModalConfig.title === 'Error' ? 'OK' : 'Continue'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Alert */}
+      {showSuccessAlert && (
+        <div className="fixed top-4 right-4 z-50 animate-slide-in">
+          <div className="bg-white border border-green-200 rounded-lg shadow-lg p-4 flex items-center space-x-3 min-w-[300px]">
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="text-green-600" size={18} />
+              </div>
+            </div>
+            <p className="text-sm text-gray-800 flex-1">{successMessage}</p>
+            <button
+              onClick={() => setShowSuccessAlert(false)}
+              className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+            >
+              <X size={16} />
+            </button>
           </div>
         </div>
       )}
