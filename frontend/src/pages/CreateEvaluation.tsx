@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, ArrowRight, Play } from 'lucide-react';
+import { ArrowLeft, Plus, ArrowRight, Play, X, Database, FileText, Calendar } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { api } from '../services/api';
-import type { Dataset, ModelConfig } from '../types';
+import type { Dataset, ModelConfig, TestQuestion } from '../types';
 import {
   LLM_PROVIDERS,
   OPENAI_MODELS,
@@ -39,6 +39,12 @@ export const CreateEvaluation: React.FC = () => {
   const [modelsToTest, setModelsToTest] = useState<ModelConfig[]>([
     { provider: 'openai', model: 'gpt-4o-mini' },
   ]);
+  
+  // Dataset review modal
+  const [showDatasetReview, setShowDatasetReview] = useState(false);
+  const [datasetDetails, setDatasetDetails] = useState<Dataset | null>(null);
+  const [datasetQuestions, setDatasetQuestions] = useState<TestQuestion[]>([]);
+  const [loadingDatasetReview, setLoadingDatasetReview] = useState(false);
 
   useEffect(() => {
     if (workspaceId) {
@@ -446,8 +452,10 @@ export const CreateEvaluation: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-xs text-gray-500">Configured for {modelsToTest.length} models and {formData.top_k} docs per request.</p>
                 <button
-                  onClick={() => setFormData({ ...formData })}
-                  className="w-full py-2 px-4 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium border border-blue-100"
+                  type="button"
+                  onClick={handleReviewDataset}
+                  disabled={!formData.dataset_id}
+                  className="w-full py-2 px-4 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium border border-blue-100 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   Review dataset
                 </button>
@@ -473,7 +481,123 @@ export const CreateEvaluation: React.FC = () => {
             </div>
           </aside>
         </div>
-      </div>
+            </div>
+
+      {/* Dataset Review Modal */}
+      {showDatasetReview && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Dataset Review</h2>
+              <button
+                onClick={() => {
+                  setShowDatasetReview(false);
+                  setDatasetDetails(null);
+                  setDatasetQuestions([]);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingDatasetReview ? (
+                <div className="flex items-center justify-center py-12">
+                  <LoadingSpinner />
+                </div>
+              ) : datasetDetails ? (
+                <div className="space-y-6">
+                  {/* Dataset Info */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Database size={20} className="text-blue-500" />
+                      {datasetDetails.name}
+                    </h3>
+                    {datasetDetails.description && (
+                      <p className="text-sm text-gray-600 mb-4">{datasetDetails.description}</p>
+                    )}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <FileText size={16} className="text-gray-400" />
+                        <span><strong>{datasetQuestions.length}</strong> questions</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar size={16} className="text-gray-400" />
+                        <span>Created {new Date(datasetDetails.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sample Questions */}
+                  {datasetQuestions.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                        Sample Questions ({Math.min(5, datasetQuestions.length)} of {datasetQuestions.length})
+                      </h4>
+                      <div className="space-y-3">
+                        {datasetQuestions.slice(0, 5).map((q, index) => (
+                          <div key={q.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <div className="flex items-start gap-3">
+                              <div className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-semibold">
+                                {index + 1}
+                              </div>
+                              <div className="flex-1 space-y-2">
+                                <p className="text-sm font-medium text-gray-900">{q.question}</p>
+                                {q.expected_answer && (
+                                  <div className="text-xs text-gray-600">
+                                    <span className="font-medium">Expected Answer: </span>
+                                    <span>{q.expected_answer}</span>
+                                  </div>
+                                )}
+                                {q.context && (
+                                  <div className="text-xs text-blue-600 flex items-center gap-1">
+                                    <FileText size={12} />
+                                    <span className="font-medium">{q.context}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {datasetQuestions.length > 5 && (
+                        <p className="text-xs text-gray-500 mt-3 text-center">
+                          ... and {datasetQuestions.length - 5} more questions
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {datasetQuestions.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Database size={48} className="mx-auto mb-3 text-gray-300" />
+                      <p>No questions found in this dataset.</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <p>Failed to load dataset details.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowDatasetReview(false);
+                  setDatasetDetails(null);
+                  setDatasetQuestions([]);
+                }}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
