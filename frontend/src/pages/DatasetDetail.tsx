@@ -194,33 +194,43 @@ export const DatasetDetail: React.FC = () => {
                       <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
                         <p className="text-xs font-medium text-blue-900 mb-1">Context/Reference:</p>
                         <p className="text-sm text-blue-800">
-                          {/* Show only filename if context looks like a filename (short, no line breaks, has extension) */}
-                          {/* Otherwise show just the filename part if it contains a path */}
                           {(() => {
                             const context = question.context || '';
-                            // Check if it's a simple filename (short, no line breaks, has extension)
-                            if (context.length < 200 && !context.includes('\n') && 
-                                (context.includes('.pdf') || context.includes('.docx') || 
-                                 context.includes('.txt') || context.includes('.xlsx') ||
-                                 context.includes('.pptx') || context.includes('.json') ||
-                                 context.includes('.csv') || context.includes('.html'))) {
+                            
+                            // If it contains a file extension, treat it as a filename
+                            const hasExtension = /\.(pdf|docx|doc|pptx|ppt|txt|md|html|htm|csv|xlsx|xls|json|py|js|ts|tsx|jsx|java|cpp|c|h|cs|go|rb|php|swift|kt|rs|sql|sh|bash|yaml|yml|xml|css|scss|less|rtf|odt)$/i.test(context);
+                            
+                            if (hasExtension) {
                               // Extract just the filename from path if present
-                              const filename = context.split('/').pop() || context.split('\\').pop() || context;
-                              return filename;
-                            }
-                            // If it's long content, show just a message indicating filename is in dataset
-                            if (context.length > 200 || context.includes('\n')) {
-                              // Try to extract filename from the beginning if it's a path
-                              const firstLine = context.split('\n')[0];
-                              if (firstLine.includes('/') || firstLine.includes('\\')) {
-                                const filename = firstLine.split('/').pop()?.split('\\').pop() || firstLine;
-                                if (filename.length < 100) {
-                                  return filename;
-                                }
+                              let filename = context.split('/').pop() || context.split('\\').pop() || context;
+                              // Remove any URL parameters or fragments
+                              filename = filename.split('?')[0].split('#')[0];
+                              // If it's still a valid filename with extension, show it
+                              if (/\.\w+$/.test(filename)) {
+                                return filename;
                               }
+                            }
+                            
+                            // If it's long content or doesn't look like a filename, check if it contains a filename
+                            if (context.length > 50 || context.includes('\n') || context.includes('http')) {
+                              // Try to extract filename from URL or path
+                              const filenameMatch = context.match(/([^\/\\\s]+\.(pdf|docx|doc|pptx|ppt|txt|md|html|htm|csv|xlsx|xls|json|py|js|ts|java|cpp|go|rb|php|swift|yaml|xml|css|rtf|odt))/i);
+                              if (filenameMatch) {
+                                return filenameMatch[1];
+                              }
+                              // If no filename found, show generic message
                               return <span className="text-gray-500 italic">Document reference available in dataset</span>;
                             }
-                            // For short content that doesn't look like a filename, show as-is
+                            
+                            // For short content, show as-is but clean up if it looks like a URL fragment
+                            if (context.includes('?') || context.includes('=')) {
+                              // Try to extract filename from URL
+                              const urlMatch = context.match(/([^\/\?=&]+\.\w+)/);
+                              if (urlMatch) {
+                                return urlMatch[1];
+                              }
+                            }
+                            
                             return context;
                           })()}
                         </p>

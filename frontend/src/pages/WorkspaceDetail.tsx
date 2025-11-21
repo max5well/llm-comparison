@@ -39,6 +39,13 @@ export const WorkspaceDetail: React.FC = () => {
   const [loadingChunks, setLoadingChunks] = useState(false);
   const [activeTab, setActiveTab] = useState<'documents' | 'datasets' | 'evaluations'>('documents');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterOptions, setFilterOptions] = useState({
+    fileType: '',
+    minSize: '',
+    maxSize: '',
+    status: '',
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [settingsForm, setSettingsForm] = useState({
     chunk_size: 1000,
@@ -315,9 +322,45 @@ export const WorkspaceDetail: React.FC = () => {
     }
   };
 
-  const filteredDocuments = documents.filter(doc =>
-    doc.filename.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredDocuments = documents.filter(doc => {
+    // Search filter
+    const matchesSearch = doc.filename.toLowerCase().includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
+
+    // File type filter
+    if (filterOptions.fileType) {
+      const fileExt = doc.filename.split('.').pop()?.toLowerCase() || '';
+      if (fileExt !== filterOptions.fileType.toLowerCase()) return false;
+    }
+
+    // File size filters
+    if (filterOptions.minSize) {
+      const minBytes = parseFloat(filterOptions.minSize) * 1024 * 1024; // Convert MB to bytes
+      if ((doc.file_size_bytes || 0) < minBytes) return false;
+    }
+    if (filterOptions.maxSize) {
+      const maxBytes = parseFloat(filterOptions.maxSize) * 1024 * 1024; // Convert MB to bytes
+      if ((doc.file_size_bytes || 0) > maxBytes) return false;
+    }
+
+    // Status filter
+    if (filterOptions.status && doc.processing_status !== filterOptions.status) {
+      return false;
+    }
+
+    return true;
+  });
+
+  const clearFilters = () => {
+    setFilterOptions({
+      fileType: '',
+      minSize: '',
+      maxSize: '',
+      status: '',
+    });
+  };
+
+  const hasActiveFilters = filterOptions.fileType || filterOptions.minSize || filterOptions.maxSize || filterOptions.status;
 
   const documentStats = {
     total: documents.length,
@@ -444,8 +487,21 @@ export const WorkspaceDetail: React.FC = () => {
                       <Search size={16} />
                     </div>
                   </div>
-                  <button className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:border-blue-200 hover:text-gray-900">
+                  <button
+                    onClick={() => setShowFilterModal(true)}
+                    className={`px-4 py-2 border rounded-xl text-sm font-medium transition flex items-center gap-2 ${
+                      hasActiveFilters
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-200 text-gray-600 hover:border-blue-200 hover:text-gray-900'
+                    }`}
+                  >
+                    <Search size={14} />
                     Filter
+                    {hasActiveFilters && (
+                      <span className="ml-1 px-1.5 py-0.5 bg-blue-200 text-blue-700 rounded-full text-xs">
+                        Active
+                      </span>
+                    )}
                   </button>
                   <button
                     onClick={handleProcessAllFiles}
@@ -921,6 +977,109 @@ export const WorkspaceDetail: React.FC = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-bold text-gray-900">Filter Documents</h2>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {/* File Type Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">File Type</label>
+                <select
+                  value={filterOptions.fileType}
+                  onChange={(e) => setFilterOptions({ ...filterOptions, fileType: e.target.value })}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">All Types</option>
+                  <option value="pdf">PDF</option>
+                  <option value="docx">DOCX</option>
+                  <option value="doc">DOC</option>
+                  <option value="pptx">PPTX</option>
+                  <option value="ppt">PPT</option>
+                  <option value="txt">TXT</option>
+                  <option value="md">MD</option>
+                  <option value="html">HTML</option>
+                  <option value="csv">CSV</option>
+                  <option value="xlsx">XLSX</option>
+                  <option value="json">JSON</option>
+                  <option value="py">Python</option>
+                  <option value="js">JavaScript</option>
+                  <option value="ts">TypeScript</option>
+                </select>
+              </div>
+
+              {/* File Size Filters */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Min Size (MB)</label>
+                  <input
+                    type="number"
+                    value={filterOptions.minSize}
+                    onChange={(e) => setFilterOptions({ ...filterOptions, minSize: e.target.value })}
+                    placeholder="0"
+                    step="0.1"
+                    min="0"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Max Size (MB)</label>
+                  <input
+                    type="number"
+                    value={filterOptions.maxSize}
+                    onChange={(e) => setFilterOptions({ ...filterOptions, maxSize: e.target.value })}
+                    placeholder="No limit"
+                    step="0.1"
+                    min="0"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select
+                  value={filterOptions.status}
+                  onChange={(e) => setFilterOptions({ ...filterOptions, status: e.target.value })}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-2 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center justify-between p-6 border-t border-gray-200">
+              <button
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Clear Filters
+              </button>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-semibold hover:bg-blue-600"
+              >
+                Apply Filters
+              </button>
             </div>
           </div>
         </div>

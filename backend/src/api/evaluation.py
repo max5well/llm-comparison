@@ -414,9 +414,28 @@ async def generate_synthetic_questions_background(
         # Limit total questions to a reasonable number (num_questions_per_chunk * expected_chunks)
         # But we'll let the frontend handle limiting to exact number
         # Save to database - use filename as context instead of chunk content
-        for q in questions:
+        for idx, q in enumerate(questions):
             # Extract filename from metadata if available
-            filename = q.metadata.get('chunk_metadata', {}).get('document_filename', 'Document')
+            # Try multiple paths to find the filename
+            chunk_metadata = q.metadata.get('chunk_metadata', {})
+            if isinstance(chunk_metadata, dict):
+                filename = chunk_metadata.get('document_filename', None)
+            else:
+                filename = None
+            
+            # Fallback: try to get from chunk_metadatas list if available
+            if not filename and chunk_metadatas and idx < len(chunk_metadatas):
+                filename = chunk_metadatas[idx].get('document_filename', None)
+            
+            # Final fallback
+            if not filename:
+                filename = 'Document'
+            
+            # Ensure we only store the filename, not full paths or URLs
+            # Extract just the filename if it's a path or URL
+            if '/' in filename or '\\' in filename:
+                filename = filename.split('/').pop() or filename.split('\\').pop() or filename
+            
             create_test_question(
                 db=db,
                 dataset_id=dataset_id,
