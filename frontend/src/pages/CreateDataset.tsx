@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, Sparkles, Search, Edit2, Check, Database, AlertCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Sparkles, Search, Edit2, Check, Database, AlertCircle, FileText, X, CheckCircle, Info } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { api } from '../services/api';
 import { LLM_PROVIDERS, LLM_MODELS } from '../types';
@@ -48,6 +48,14 @@ export const CreateDataset: React.FC = () => {
   
   // Documents for context selection
   const [documents, setDocuments] = useState<Array<{id: string, filename: string}>>([]);
+  
+  // UI State
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoModalConfig, setInfoModalConfig] = useState<{
+    title?: string;
+    message: string;
+    type?: 'info' | 'success' | 'error';
+  } | null>(null);
 
   const filteredQuestions = questions.filter(q =>
     q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -261,13 +269,25 @@ export const CreateDataset: React.FC = () => {
 
       if (parsedQuestions.length > 0) {
         setQuestions([...parsedQuestions, ...questions]);
-        alert(`Successfully imported ${parsedQuestions.length} questions!`);
+        setInfoModalConfig({
+          message: `Successfully imported ${parsedQuestions.length} questions!`,
+          type: 'success'
+        });
+        setShowInfoModal(true);
       } else {
-        alert('No valid questions found in the file.');
+        setInfoModalConfig({
+          message: 'No valid questions found in the file.',
+          type: 'error'
+        });
+        setShowInfoModal(true);
       }
     } catch (error) {
       console.error('Failed to parse file:', error);
-      alert('Failed to parse file. Please ensure it is in the correct format (JSONL, CSV, or JSON).');
+      setInfoModalConfig({
+        message: 'Failed to parse file. Please ensure it is in the correct format (JSONL, CSV, or JSON).',
+        type: 'error'
+      });
+      setShowInfoModal(true);
     } finally {
       setUploadingFile(false);
       if (fileInputRef.current) {
@@ -282,13 +302,21 @@ export const CreateDataset: React.FC = () => {
     if (!workspaceId) return;
 
     if (!name.trim()) {
-      alert('Please enter a dataset name');
+      setInfoModalConfig({
+        message: 'Please enter a dataset name',
+        type: 'error'
+      });
+      setShowInfoModal(true);
       return;
     }
 
     const validQuestions = questions.filter(q => q.question.trim());
     if (validQuestions.length === 0) {
-      alert('Please add at least one question');
+      setInfoModalConfig({
+        message: 'Please add at least one question',
+        type: 'error'
+      });
+      setShowInfoModal(true);
       return;
     }
 
@@ -312,7 +340,11 @@ export const CreateDataset: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to create dataset:', error);
       const errorMessage = error.response?.data?.detail || error.message || 'Unknown error';
-      alert(`Failed to create dataset: ${errorMessage}`);
+      setInfoModalConfig({
+        message: `Failed to create dataset: ${errorMessage}`,
+        type: 'error'
+      });
+      setShowInfoModal(true);
     } finally {
       setLoading(false);
     }
