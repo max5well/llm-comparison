@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, Upload, Sparkles, Search, Edit2, Check, Database, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Upload, Sparkles, Search, Edit2, Check, Database, AlertCircle, FileText } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { api } from '../services/api';
 import { LLM_PROVIDERS, LLM_MODELS } from '../types';
