@@ -17,6 +17,7 @@ export const Workspaces: React.FC = () => {
   }, []);
 
   const loadWorkspaces = async () => {
+    setLoading(true);
     try {
       const data = await api.listWorkspaces();
       setWorkspaces(data || []);
@@ -26,8 +27,8 @@ export const Workspaces: React.FC = () => {
       const userId = localStorage.getItem('user_id');
       if (!userId) {
         console.error('No user_id found. User may not be logged in.');
-        // Redirect to login if not authenticated
-        window.location.href = '/login';
+        // Don't redirect here - ProtectedRoute will handle it
+        setWorkspaces([]);
         return;
       }
       // Show error to user without blocking
