@@ -34,17 +34,40 @@
   - GET `/auth/google/drive/files` - List user's Google Drive files
   - POST `/auth/google/drive/import` - Import files from Drive to workspace
 
-### 🚧 In Progress
-- [ ] Frontend Components
+### ✅ Completed (Frontend)
+- [x] Google Sign-In Button (`frontend/src/components/GoogleSignInButton.tsx`)
+  - OAuth initiation with Google branding
+  - State management and error handling
+- [x] Google OAuth Callback (`frontend/src/pages/GoogleCallback.tsx`)
+  - Handles OAuth redirect from Google
+  - State validation (CSRF protection)
+  - Token exchange and user data storage
+  - Error handling with user feedback
+- [x] Google Drive Picker (`frontend/src/components/GoogleDrivePicker.tsx`)
+  - File browsing modal with Drive API integration
+  - Multi-select file selection
+  - File type icons and metadata display
+  - Import progress tracking
+- [x] Login Page Integration (`frontend/src/pages/Login.tsx`)
+  - "Continue with Google" button
+  - Divider between email and OAuth signup
+- [x] CreateWorkspace Integration (`frontend/src/pages/CreateWorkspace.tsx`)
+  - Google Drive data source option
+  - Drive picker integration
+  - Workspace creation with Drive files
+- [x] API Client (`frontend/src/services/api.ts`)
+  - getGoogleAuthUrl() method
+  - handleGoogleCallback() method
+  - listGoogleDriveFiles() method
+  - importFromGoogleDrive() method
+- [x] Routing (`frontend/src/App.tsx`)
+  - Added /auth/google/callback route
 
 ### 📋 Pending
-- [ ] Google Sign-In Button Component
-- [ ] Google Drive Picker Component
-- [ ] Update Login page with Google OAuth
-- [ ] Update CreateWorkspace with Drive import option
-- [ ] Environment variables setup (.env.example)
-- [ ] Testing & validation
-- [ ] Documentation updates
+- [ ] Environment variables setup (.env.example with Google credentials)
+- [ ] End-to-end testing with real Google OAuth
+- [ ] Documentation for Google Cloud Console setup
+- [ ] Production deployment configuration
 
 ---
 
