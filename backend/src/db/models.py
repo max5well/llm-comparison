@@ -18,6 +18,14 @@ class User(Base):
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    # Google OAuth fields
+    google_id = Column(Text)
+    google_access_token = Column(Text)
+    google_refresh_token = Column(Text)
+    google_token_expiry = Column(TIMESTAMP(timezone=True))
+    avatar_url = Column(Text)
+    name = Column(Text)
+
 
 class Workspace(Base):
     __tablename__ = "workspaces"
@@ -51,6 +59,10 @@ class Document(Base):
     total_chunks = Column(Integer, default=0)
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Source tracking for Google Drive imports
+    source = Column(Text, default='upload')  # 'upload' or 'google_drive'
+    source_id = Column(Text)  # Google Drive file ID if applicable
 
 
 class Chunk(Base):

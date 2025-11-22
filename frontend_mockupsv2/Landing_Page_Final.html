@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Compare - Test Your RAG Across 1000+ Models</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script> window.FontAwesomeConfig = { autoReplaceSvg: 'nest'};</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>::-webkit-scrollbar { display: none;}
+    *:focus {
+        outline: 3px solid #3b82f6;
+        outline-offset: 2px;
+    }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+<header id="header" class="bg-white border-b border-gray-200 sticky top-0 z-50" role="banner">
+    <nav class="max-w-7xl mx-auto px-8 py-5" aria-label="Main navigation">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center" aria-hidden="true">
+                    <i class="fa-solid fa-layer-group text-white text-xl"></i>
+                </div>
+                <span class="text-2xl font-bold text-gray-900">LLM Compare</span>
+            </div>
+            <ul class="flex items-center gap-10" role="menubar">
+                <li role="none"><a href="#features" class="text-lg text-gray-700 hover:text-primary-600 font-medium transition-colors" role="menuitem">Features</a></li>
+                <li role="none"><a href="#how-it-works" class="text-lg text-gray-700 hover:text-primary-600 font-medium transition-colors" role="menuitem">How It Works</a></li>
+                <li role="none"><a href="#testimonials" class="text-lg text-gray-700 hover:text-primary-600 font-medium transition-colors" role="menuitem">Testimonials</a></li>
+                <li role="none"><a href="#pricing" class="text-lg text-gray-700 hover:text-primary-600 font-medium transition-colors" role="menuitem">Pricing</a></li>
+            </ul>
+            <div class="flex items-center gap-4">
+                <button class="px-6 py-3 text-lg font-semibold text-gray-700 hover:text-primary-600 transition-colors" aria-label="Sign in to your account">Sign In</button>
+                <button class="px-8 py-3 text-lg font-semibold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors focus:ring-4 focus:ring-primary-200" aria-label="Start free trial">Start Free Trial</button>
+            </div>
+        </div>
+    </nav>
+</header>
+
+<main id="main-content" role="main">
+    <!-- HERO SECTION - Updated Copy -->
+    <section id="hero-section" class="bg-gradient-to-br from-primary-50 to-white py-24 h-[700px] flex items-center" aria-labelledby="hero-heading">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="grid grid-cols-2 gap-16 items-center">
+                <div class="space-y-8">
+                    <div class="inline-block px-5 py-2 bg-primary-100 text-primary-700 rounded-full text-base font-semibold" role="status" aria-label="Platform status">
+                        <i class="fa-solid fa-sparkles mr-2" aria-hidden="true"></i>
+                        Trusted by 500+ Teams Building RAG Applications
+                    </div>
+                    <h1 id="hero-heading" class="text-6xl font-bold text-gray-900 leading-tight">
+                        Test Your RAG,<br/>
+                        Find the <span class="text-primary-600">Perfect Model</span>
+                    </h1>
+                    <p class="text-2xl text-gray-600 leading-relaxed">
+                        Evaluate your RAG system across 1000+ models. Compare accuracy, cost, and latency. Find the optimal balance for your use case in minutes, not weeks.
+                    </p>
+                    <div class="flex items-center gap-5 pt-4">
+                        <button class="px-10 py-5 text-xl font-bold bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all shadow-lg hover:shadow-xl focus:ring-4 focus:ring-primary-200" aria-label="Get started with free trial">
+                            Start Testing Free
+                            <i class="fa-solid fa-arrow-right ml-3" aria-hidden="true"></i>
+                        </button>
+                        <button class="px-10 py-5 text-xl font-bold text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:border-primary-600 hover:text-primary-600 transition-all focus:ring-4 focus:ring-gray-200" aria-label="Schedule a product demo">
+                            See Live Demo
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 pt-6 max-w-xl">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-check-circle text-primary-600 text-xl flex-shrink-0" aria-hidden="true"></i>
+                            <span class="text-base text-gray-600 leading-tight">No credit card</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-check-circle text-primary-600 text-xl flex-shrink-0" aria-hidden="true"></i>
+                            <span class="text-base text-gray-600 leading-tight">Results in 5 min</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-check-circle text-primary-600 text-xl flex-shrink-0" aria-hidden="true"></i>
+                            <span class="text-base text-gray-600 leading-tight">14-day free trial</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-check-circle text-primary-600 text-xl flex-shrink-0" aria-hidden="true"></i>
+                            <span class="text-base text-gray-600 leading-tight">Cancel anytime</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="relative" aria-hidden="true">
+                    <div class="bg-white rounded-2xl shadow-2xl p-8 border border-gray-200">
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between pb-6 border-b border-gray-200">
+                                <span class="text-xl font-semibold text-gray-900">RAG Evaluation Results</span>
+                                <span class="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-base font-semibold">Complete</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="space-y-3">
+                                    <div class="text-base text-gray-500 font-medium">GPT-4o-mini</div>
+                                    <div class="text-4xl font-bold text-gray-900">92.4%</div>
+                                    <div class="text-base text-green-600 font-semibold">
+                                        <i class="fa-solid fa-dollar-sign mr-1"></i>$0.0012/query
+                                    </div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="text-base text-gray-500 font-medium">Claude 3.5</div>
+                                    <div class="text-4xl font-bold text-gray-900">94.1%</div>
+                                    <div class="text-base text-orange-600 font-semibold">
+                                        <i class="fa-solid fa-dollar-sign mr-1"></i>$0.0089/query
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="pt-4 bg-green-50 rounded-xl p-4 border border-green-200">
+                                <div class="text-sm text-green-800 font-semibold mb-2">
+                                    <i class="fa-solid fa-lightbulb mr-2"></i>Recommendation
+                                </div>
+                                <p class="text-sm text-green-700">
+                                    Switch to GPT-4o-mini to save <strong>$14,280/year</strong> with only 1.7% accuracy trade-off
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ADVANTAGES SECTION -->
+    <section id="advantages" class="py-24 bg-gradient-to-br from-primary-600 to-primary-800" aria-labelledby="advantages-heading">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="text-center mb-16">
+                <h2 id="advantages-heading" class="text-5xl font-bold text-white mb-6">
+                    Why Choose LLM Compare?
+                </h2>
+                <p class="text-2xl text-primary-100 max-w-3xl mx-auto leading-relaxed">
+                    The fastest way to test, optimize, and deploy your RAG system
+                </p>
+            </div>
+            <div class="grid grid-cols-3 gap-10">
+                <!-- Advantage 1: Google Drive Integration -->
+                <article class="bg-white/10 backdrop-blur-sm rounded-2xl p-10 border-2 border-white/20 hover:bg-white/20 transition-all group" tabindex="0">
+                    <div class="flex flex-col items-center text-center space-y-6">
+                        <!-- Google Drive Icon -->
+                        <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform" aria-hidden="true">
+                            <svg class="w-14 h-14" viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                                <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                                <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Connect Any Data Source</h3>
+                            <p class="text-lg text-primary-100 leading-relaxed">
+                                Upload files directly, connect Google Drive, or integrate your existing RAG via API. Start testing in seconds.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 text-white/90">
+                            <i class="fa-solid fa-bolt text-yellow-300"></i>
+                            <span class="text-sm font-semibold">Zero Setup Time</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Advantage 2: File Format Support -->
+                <article class="bg-white/10 backdrop-blur-sm rounded-2xl p-10 border-2 border-white/20 hover:bg-white/20 transition-all group" tabindex="0">
+                    <div class="flex flex-col items-center text-center space-y-6">
+                        <!-- File Icons Collage -->
+                        <div class="relative w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform" aria-hidden="true">
+                            <div class="grid grid-cols-2 gap-1 p-2">
+                                <i class="fa-solid fa-file-pdf text-red-500 text-2xl"></i>
+                                <i class="fa-solid fa-file-word text-blue-500 text-2xl"></i>
+                                <i class="fa-solid fa-file-excel text-green-600 text-2xl"></i>
+                                <i class="fa-solid fa-file-lines text-gray-600 text-2xl"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white mb-3">26+ File Formats Supported</h3>
+                            <p class="text-lg text-primary-100 leading-relaxed">
+                                PDF, DOCX, TXT, Markdown, HTML, CSV, JSON, and more. Your knowledge base, your format, no conversion needed.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 text-white/90">
+                            <i class="fa-solid fa-check-double text-green-300"></i>
+                            <span class="text-sm font-semibold">Universal Compatibility</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Advantage 3: Model Selection -->
+                <article class="bg-white/10 backdrop-blur-sm rounded-2xl p-10 border-2 border-white/20 hover:bg-white/20 transition-all group" tabindex="0">
+                    <div class="flex flex-col items-center text-center space-y-6">
+                        <!-- Provider Logos -->
+                        <div class="w-24 h-24 bg-white rounded-2xl flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform p-3" aria-hidden="true">
+                            <div class="grid grid-cols-2 gap-2 w-full h-full">
+                                <!-- OpenAI -->
+                                <div class="bg-black rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
+                                    </svg>
+                                </div>
+                                <!-- Anthropic -->
+                                <div class="bg-gradient-to-br from-orange-400 to-amber-600 rounded-lg flex items-center justify-center">
+                                    <i class="fa-solid fa-brain text-white text-xl"></i>
+                                </div>
+                                <!-- Google -->
+                                <div class="bg-white rounded-lg flex items-center justify-center p-1">
+                                    <svg class="w-5 h-5" viewBox="0 0 24 24">
+                                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                                    </svg>
+                                </div>
+                                <!-- Mistral -->
+                                <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                                    <i class="fa-solid fa-robot text-white text-sm"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="text-2xl font-bold text-white mb-3">1000+ Models to Compare</h3>
+                            <p class="text-lg text-primary-100 leading-relaxed">
+                                Test OpenAI, Anthropic, Google, Mistral, open-source models, and more. Find your perfect cost-quality balance.
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 text-white/90">
+                            <i class="fa-solid fa-infinity text-purple-300"></i>
+                            <span class="text-sm font-semibold">Unlimited Choice</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES SECTION - Updated for RAG -->
+    <section id="features" class="py-24 bg-white" aria-labelledby="features-heading">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="text-center mb-20">
+                <h2 id="features-heading" class="text-5xl font-bold text-gray-900 mb-6">
+                    Everything You Need to Optimize Your RAG
+                </h2>
+                <p class="text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    From testing to deployment, get the complete toolkit for RAG optimization
+                </p>
+            </div>
+            <div class="grid grid-cols-3 gap-10">
+                <!-- Feature 1: RAG Quality Metrics -->
+                <article id="feature-card-1" class="bg-gray-50 rounded-2xl p-10 hover:shadow-xl transition-shadow border border-gray-200" tabindex="0">
+                    <div class="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
+                        <i class="fa-solid fa-bullseye text-primary-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">RAG-Specific Metrics</h3>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        Measure accuracy, faithfulness, reasoning quality, and context utilization. Automated LLM judge evaluates what matters for RAG.
+                    </p>
+                </article>
+
+                <!-- Feature 2: Cost Savings Calculator -->
+                <article id="feature-card-2" class="bg-gray-50 rounded-2xl p-10 hover:shadow-xl transition-shadow border border-gray-200" tabindex="0">
+                    <div class="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
+                        <i class="fa-solid fa-piggy-bank text-green-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Annual Savings Calculator</h3>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        See exactly how much you'll save by switching models. Calculate ROI based on your actual query volume and usage patterns.
+                    </p>
+                </article>
+
+                <!-- Feature 3: Side-by-Side Testing -->
+                <article id="feature-card-3" class="bg-gray-50 rounded-2xl p-10 hover:shadow-xl transition-shadow border border-gray-200" tabindex="0">
+                    <div class="w-16 h-16 bg-purple-100 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
+                        <i class="fa-solid fa-code-compare text-purple-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Multi-Model Comparison</h3>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        Test unlimited models simultaneously with identical questions. Apples-to-apples comparison ensures accurate results.
+                    </p>
+                </article>
+
+                <!-- Feature 4: Connect Existing RAG -->
+                <article id="feature-card-4" class="bg-gray-50 rounded-2xl p-10 hover:shadow-xl transition-shadow border border-gray-200" tabindex="0">
+                    <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
+                        <i class="fa-solid fa-plug text-blue-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Connect Your RAG API</h3>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        Already have a RAG system? Connect via API to test model swaps without rebuilding. Works with any RAG framework.
+                    </p>
+                </article>
+
+                <!-- Feature 5: Export Configuration -->
+                <article id="feature-card-5" class="bg-gray-50 rounded-2xl p-10 hover:shadow-xl transition-shadow border border-gray-200" tabindex="0">
+                    <div class="w-16 h-16 bg-orange-100 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
+                        <i class="fa-solid fa-download text-orange-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Export Winning Config</h3>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        Download your optimal setup with deployment code for LangChain, LlamaIndex, and popular frameworks. Copy-paste ready.
+                    </p>
+                </article>
+
+                <!-- Feature 6: Enterprise Security -->
+                <article id="feature-card-6" class="bg-gray-50 rounded-2xl p-10 hover:shadow-xl transition-shadow border border-gray-200" tabindex="0">
+                    <div class="w-16 h-16 bg-red-100 rounded-xl flex items-center justify-center mb-6" aria-hidden="true">
+                        <i class="fa-solid fa-shield-halved text-red-600 text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Enterprise-Grade Security</h3>
+                    <p class="text-lg text-gray-600 leading-relaxed">
+                        SOC 2 Type II certified with end-to-end encryption. Your data, documents, and evaluation results stay private and secure.
+                    </p>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS - Updated for RAG -->
+    <section id="how-it-works" class="py-24 bg-gradient-to-br from-gray-50 to-primary-50" aria-labelledby="how-it-works-heading">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="text-center mb-20">
+                <h2 id="how-it-works-heading" class="text-5xl font-bold text-gray-900 mb-6">
+                    Test Your RAG in 3 Simple Steps
+                </h2>
+                <p class="text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    From upload to deployment-ready config in under 10 minutes
+                </p>
+            </div>
+            <div class="grid grid-cols-3 gap-12">
+                <article id="step-card-1" class="relative" tabindex="0">
+                    <div class="bg-white rounded-2xl p-10 shadow-lg border-2 border-gray-200 hover:border-primary-600 transition-all h-full">
+                        <div class="flex items-center justify-center w-20 h-20 bg-primary-600 text-white rounded-2xl text-4xl font-bold mb-8 shadow-lg" aria-label="Step 1">
+                            1
+                        </div>
+                        <h3 class="text-3xl font-bold text-gray-900 mb-5">Upload or Connect</h3>
+                        <p class="text-xl text-gray-600 leading-relaxed mb-6">
+                            Upload documents, connect Google Drive, or integrate your existing RAG via API. We support 26+ file formats and all major frameworks.
+                        </p>
+                        <div class="flex items-center gap-3 text-primary-600 font-semibold text-lg" aria-hidden="true">
+                            <i class="fa-solid fa-check-circle text-2xl"></i>
+                            <span>Ready in 30 seconds</span>
+                        </div>
+                    </div>
+                    <div class="absolute -right-6 top-1/2 transform -translate-y-1/2 text-primary-300 text-5xl hidden xl:block" aria-hidden="true">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </article>
+
+                <article id="step-card-2" class="relative" tabindex="0">
+                    <div class="bg-white rounded-2xl p-10 shadow-lg border-2 border-gray-200 hover:border-primary-600 transition-all h-full">
+                        <div class="flex items-center justify-center w-20 h-20 bg-primary-600 text-white rounded-2xl text-4xl font-bold mb-8 shadow-lg" aria-label="Step 2">
+                            2
+                        </div>
+                        <h3 class="text-3xl font-bold text-gray-900 mb-5">Select Models to Test</h3>
+                        <p class="text-xl text-gray-600 leading-relaxed mb-6">
+                            Choose from 1000+ models across OpenAI, Anthropic, Google, Mistral, and more. Test as many as you want simultaneously.
+                        </p>
+                        <div class="flex items-center gap-3 text-primary-600 font-semibold text-lg" aria-hidden="true">
+                            <i class="fa-solid fa-check-circle text-2xl"></i>
+                            <span>Results in 5 minutes</span>
+                        </div>
+                    </div>
+                    <div class="absolute -right-6 top-1/2 transform -translate-y-1/2 text-primary-300 text-5xl hidden xl:block" aria-hidden="true">
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </div>
+                </article>
+
+                <article id="step-card-3" class="relative" tabindex="0">
+                    <div class="bg-white rounded-2xl p-10 shadow-lg border-2 border-gray-200 hover:border-primary-600 transition-all h-full">
+                        <div class="flex items-center justify-center w-20 h-20 bg-primary-600 text-white rounded-2xl text-4xl font-bold mb-8 shadow-lg" aria-label="Step 3">
+                            3
+                        </div>
+                        <h3 class="text-3xl font-bold text-gray-900 mb-5">Compare & Deploy</h3>
+                        <p class="text-xl text-gray-600 leading-relaxed mb-6">
+                            Review quality metrics, cost analysis, and annual savings. Export your winning configuration with deployment code ready to use.
+                        </p>
+                        <div class="flex items-center gap-3 text-primary-600 font-semibold text-lg" aria-hidden="true">
+                            <i class="fa-solid fa-check-circle text-2xl"></i>
+                            <span>Deploy in minutes</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section id="testimonials" class="py-24 bg-white" aria-labelledby="testimonials-heading">
+        <div class="max-w-7xl mx-auto px-8">
+            <div class="text-center mb-20">
+                <h2 id="testimonials-heading" class="text-5xl font-bold text-gray-900 mb-6">
+                    Trusted by RAG Teams Worldwide
+                </h2>
+                <p class="text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+                    See how teams are optimizing their RAG systems and saving thousands
+                </p>
+            </div>
+            <div class="grid grid-cols-3 gap-10">
+                <article id="testimonial-card-1" class="bg-gray-50 rounded-2xl p-10 border-2 border-gray-200 hover:border-primary-600 transition-all" tabindex="0">
+                    <div class="flex items-center gap-2 mb-6" role="img" aria-label="5 out of 5 stars">
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                    </div>
+                    <blockquote>
+                        <p class="text-xl text-gray-700 leading-relaxed mb-8">
+                            "We discovered GPT-4o-mini performed 95% as well as GPT-4 on our support docs for 1/15th the cost. LLM Compare saved us $18K annually in 30 minutes of testing."
+                        </p>
+                    </blockquote>
+                    <div class="flex items-center gap-4">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-2.jpg" alt="Portrait of Michael Chen" class="w-16 h-16 rounded-full object-cover">
+                        <div>
+                            <div class="text-lg font-bold text-gray-900">Michael Chen</div>
+                            <div class="text-base text-gray-600">Head of AI, TechCorp</div>
+                        </div>
+                    </div>
+                </article>
+
+                <article id="testimonial-card-2" class="bg-gray-50 rounded-2xl p-10 border-2 border-gray-200 hover:border-primary-600 transition-all" tabindex="0">
+                    <div class="flex items-center gap-2 mb-6" role="img" aria-label="5 out of 5 stars">
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                    </div>
+                    <blockquote>
+                        <p class="text-xl text-gray-700 leading-relaxed mb-8">
+                            "The API integration let us test our production RAG system without rebuilding anything. Found that Claude 3.5 Haiku matched our GPT-4 setup at 75% lower cost."
+                        </p>
+                    </blockquote>
+                    <div class="flex items-center gap-4">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-5.jpg" alt="Portrait of Sarah Johnson" class="w-16 h-16 rounded-full object-cover">
+                        <div>
+                            <div class="text-lg font-bold text-gray-900">Sarah Johnson</div>
+                            <div class="text-base text-gray-600">CTO, DataFlow Inc</div>
+                        </div>
+                    </div>
+                </article>
+
+                <article id="testimonial-card-3" class="bg-gray-50 rounded-2xl p-10 border-2 border-gray-200 hover:border-primary-600 transition-all" tabindex="0">
+                    <div class="flex items-center gap-2 mb-6" role="img" aria-label="5 out of 5 stars">
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                        <i class="fa-solid fa-star text-yellow-400 text-2xl"></i>
+                    </div>
+                    <blockquote>
+                        <p class="text-xl text-gray-700 leading-relaxed mb-8">
+                            "The LLM judge metrics revealed our model was hallucinating 12% of the time. Switching to a different model + tuning retrieval settings fixed it completely."
+                        </p>
+                    </blockquote>
+                    <div class="flex items-center gap-4">
+                        <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-8.jpg" alt="Portrait of David Martinez" class="w-16 h-16 rounded-full object-cover">
+                        <div>
+                            <div class="text-lg font-bold text-gray-900">David Martinez</div>
+                            <div class="text-base text-gray-600">VP Engineering, SecureAI</div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA SECTION - Updated -->
+    <section id="cta-section" class="py-24 bg-gradient-to-br from-primary-600 to-primary-800" aria-labelledby="cta-heading">
+        <div class="max-w-5xl mx-auto px-8 text-center">
+            <h2 id="cta-heading" class="text-5xl font-bold text-white mb-6">
+                Ready to Optimize Your RAG?
+            </h2>
+            <p class="text-2xl text-primary-100 mb-12 leading-relaxed">
+                Join 500+ teams testing RAG systems and saving thousands on LLM costs
+            </p>
+            <div class="flex items-center justify-center gap-6">
+                <button class="px-12 py-5 text-xl font-bold bg-white text-primary-600 rounded-lg hover:bg-gray-100 transition-all shadow-xl hover:shadow-2xl focus:ring-4 focus:ring-white" aria-label="Start your free trial today">
+                    Start Testing Free
+                    <i class="fa-solid fa-arrow-right ml-3" aria-hidden="true"></i>
+                </button>
+                <button class="px-12 py-5 text-xl font-bold text-white border-2 border-white rounded-lg hover:bg-white hover:text-primary-600 transition-all focus:ring-4 focus:ring-white" aria-label="Contact our sales team">
+                    See Live Demo
+                </button>
+            </div>
+            <div class="flex items-center justify-center gap-10 mt-12 text-primary-100">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-check-circle text-2xl" aria-hidden="true"></i>
+                    <span class="text-lg">Test unlimited models</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-check-circle text-2xl" aria-hidden="true"></i>
+                    <span class="text-lg">Results in 5 minutes</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-check-circle text-2xl" aria-hidden="true"></i>
+                    <span class="text-lg">No credit card required</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer id="footer" class="bg-gray-900 text-gray-300 py-16" role="contentinfo">
+    <div class="max-w-7xl mx-auto px-8">
+        <div class="grid grid-cols-5 gap-12 mb-16">
+            <div class="col-span-2">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center" aria-hidden="true">
+                        <i class="fa-solid fa-layer-group text-white text-xl"></i>
+                    </div>
+                    <span class="text-2xl font-bold text-white">LLM Compare</span>
+                </div>
+                <p class="text-lg text-gray-400 leading-relaxed mb-8">
+                    Test your RAG system across 1000+ models. Find the perfect balance of quality, speed, and cost.
+                </p>
+                <div class="flex items-center gap-5" role="list" aria-label="Social media links">
+                    <a href="#" class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors focus:ring-4 focus:ring-primary-200" aria-label="Follow us on Twitter" role="listitem">
+                        <i class="fa-brands fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors focus:ring-4 focus:ring-primary-200" aria-label="Follow us on LinkedIn" role="listitem">
+                        <i class="fa-brands fa-linkedin text-xl"></i>
+                    </a>
+                    <a href="#" class="w-12 h-12 bg-gray-800 rounded-lg flex items-center justify-center hover:bg-primary-600 transition-colors focus:ring-4 focus:ring-primary-200" aria-label="Follow us on GitHub" role="listitem">
+                        <i class="fa-brands fa-github text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white mb-6">Product</h3>
+                <ul class="space-y-4" role="list">
+                    <li><a href="#features" class="text-base text-gray-400 hover:text-white transition-colors">Features</a></li>
+                    <li><a href="#pricing" class="text-base text-gray-400 hover:text-white transition-colors">Pricing</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Documentation</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">API Reference</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white mb-6">Company</h3>
+                <ul class="space-y-4" role="list">
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">About Us</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Blog</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Careers</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Contact</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold text-white mb-6">Legal</h3>
+                <ul class="space-y-4" role="list">
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Security</a></li>
+                    <li><a href="#" class="text-base text-gray-400 hover:text-white transition-colors">Compliance</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-base text-gray-400">© 2025 LLM Compare. All rights reserved.</p>
+            <div class="flex items-center gap-6">
+                <span class="text-sm text-gray-500">Helping teams optimize RAG systems worldwide</span>
+            </div>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>

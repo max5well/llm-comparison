@@ -76,19 +76,39 @@ export const CreateWorkspace: React.FC = () => {
     }
     setLoading(true);
     try {
+      console.log('Creating workspace with data:', formData);
+      console.log('Files to upload:', files.length);
+      
       const workspace = await api.createWorkspace({
         ...formData,
         data_source: 'manual',
       });
+      
+      console.log('Workspace created:', workspace.id);
+      
       if (files.length > 0) {
-        for (const file of files) {
-          await api.uploadDocument(workspace.id, file);
+        console.log('Uploading files...');
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          console.log(`Uploading file ${i + 1}/${files.length}: ${file.name}`);
+          try {
+            await api.uploadDocument(workspace.id, file);
+            console.log(`Successfully uploaded: ${file.name}`);
+          } catch (uploadError: any) {
+            console.error(`Failed to upload ${file.name}:`, uploadError);
+            // Continue with other files even if one fails
+          }
         }
+        console.log('All files uploaded');
       }
+      
+      // Navigate to workspace detail page
+      console.log('Navigating to workspace:', workspace.id);
       navigate(`/workspaces/${workspace.id}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create workspace:', error);
-    } finally {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to create workspace';
+      alert(`Error: ${errorMessage}`);
       setLoading(false);
     }
   };
