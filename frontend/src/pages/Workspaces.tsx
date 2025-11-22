@@ -8,7 +8,6 @@ import type { Workspace } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 
 export const Workspaces: React.FC = () => {
-  const navigate = useNavigate();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
