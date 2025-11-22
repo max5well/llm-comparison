@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/Layout';
+import { GoogleDrivePicker } from '../components/GoogleDrivePicker';
 import { api } from '../services/api';
 import {
   ArrowLeft,
@@ -38,6 +39,9 @@ export const CreateWorkspace: React.FC = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [dataSource, setDataSource] = useState<'upload' | 'drive'>('upload');
   const [loading, setLoading] = useState(false);
+  const [showDrivePicker, setShowDrivePicker] = useState(false);
+  const [importedFromDrive, setImportedFromDrive] = useState<string[]>([]);
+  const [tempWorkspaceId, setTempWorkspaceId] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const chunkLabel = `${formData.chunk_size} tokens`;
   const formattedSize = files.length
@@ -54,13 +58,51 @@ export const CreateWorkspace: React.FC = () => {
   };
 
   const handleContinue = () => {
-    if (currentStep === 1 && dataSource === 'upload' && files.length === 0) {
-      alert('Please upload at least one document.');
-      return;
+    if (currentStep === 1) {
+      if (dataSource === 'upload' && files.length === 0) {
+        alert('Please upload at least one document.');
+        return;
+      }
+      if (dataSource === 'drive' && importedFromDrive.length === 0) {
+        alert('Please select files from Google Drive.');
+        return;
+      }
     }
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
     }
+  };
+
+  const handleOpenDrivePicker = async () => {
+    // If workspace doesn't exist yet, create it first
+    if (!tempWorkspaceId) {
+      if (!formData.name) {
+        alert('Please provide a workspace name first.');
+        setCurrentStep(3); // Go to review step to enter name
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const workspace = await api.createWorkspace({
+          ...formData,
+          data_source: 'google_drive',
+        });
+        setTempWorkspaceId(workspace.id);
+        setShowDrivePicker(true);
+      } catch (error: any) {
+        console.error('Failed to create workspace:', error);
+        alert(error.response?.data?.detail || 'Failed to create workspace');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setShowDrivePicker(true);
+    }
+  };
+
+  const handleDriveImport = (documentIds: string[]) => {
+    setImportedFromDrive(documentIds);
   };
 
   const handleBack = () => {
@@ -74,18 +116,27 @@ export const CreateWorkspace: React.FC = () => {
       alert('Please provide a workspace name.');
       return;
     }
+
     setLoading(true);
     try {
+      // If using Google Drive and workspace already exists, just navigate
+      if (dataSource === 'drive' && tempWorkspaceId) {
+        console.log('Navigating to existing Google Drive workspace:', tempWorkspaceId);
+        navigate(`/workspaces/${tempWorkspaceId}`);
+        return;
+      }
+
+      // Create workspace for upload flow
       console.log('Creating workspace with data:', formData);
       console.log('Files to upload:', files.length);
-      
+
       const workspace = await api.createWorkspace({
         ...formData,
         data_source: 'manual',
       });
-      
+
       console.log('Workspace created:', workspace.id);
-      
+
       if (files.length > 0) {
         console.log('Uploading files...');
         for (let i = 0; i < files.length; i++) {
@@ -101,7 +152,7 @@ export const CreateWorkspace: React.FC = () => {
         }
         console.log('All files uploaded');
       }
-      
+
       // Navigate to workspace detail page
       console.log('Navigating to workspace:', workspace.id);
       navigate(`/workspaces/${workspace.id}`);
@@ -166,13 +217,20 @@ export const CreateWorkspace: React.FC = () => {
                       <span className="text-xs">Batch upload (26+ formats)</span>
                     </button>
                     <button
-                      className="flex flex-col gap-1 rounded-2xl border border-gray-200 p-4 text-left text-sm bg-white text-gray-400 cursor-not-allowed"
-                      disabled
+                      className={`flex flex-col gap-1 rounded-2xl border p-4 text-left text-sm ${
+                        dataSource === 'drive'
+                          ? 'border-blue-500 bg-blue-50 text-gray-900 shadow'
+                          : 'border-gray-200 bg-white text-gray-600'
+                      }`}
+                      onClick={() => setDataSource('drive')}
                     >
                       <span className="text-lg font-semibold">Google Drive</span>
-                      <span className="text-xs">Coming soon</span>
+                      <span className="text-xs">Import from Drive</span>
                     </button>
                   </div>
+
+                  {/* File Upload Area - only shown for upload source */}
+                  {dataSource === 'upload' && (
                     <label className="block border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer hover:border-blue-500">
                       <input
                         type="file"
@@ -183,13 +241,35 @@ export const CreateWorkspace: React.FC = () => {
                         accept=".pdf,.docx,.doc,.txt,.md,.markdown,.text,.html,.htm,.csv,.xlsx,.xls,.json,.pptx,.ppt,.rtf,.odt,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.h,.cs,.go,.rb,.php,.swift,.kt,.rs,.sql,.sh,.bash,.yaml,.yml,.xml,.css,.scss,.less"
                       />
                       <div className="flex flex-col items-center gap-2">
-                      <CloudUpload className="text-blue-500" size={32} />
-                      <p className="text-sm text-gray-500">Drag & drop files or browse</p>
-                      <p className="text-xs text-gray-400">
-                        {files.length} files selected · {formattedSize}
-                      </p>
-                    </div>
-                  </label>
+                        <CloudUpload className="text-blue-500" size={32} />
+                        <p className="text-sm text-gray-500">Drag & drop files or browse</p>
+                        <p className="text-xs text-gray-400">
+                          {files.length} files selected · {formattedSize}
+                        </p>
+                      </div>
+                    </label>
+                  )}
+
+                  {/* Google Drive Picker Button - only shown for drive source */}
+                  {dataSource === 'drive' && (
+                    <button
+                      onClick={handleOpenDrivePicker}
+                      disabled={loading}
+                      className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer hover:border-blue-500 transition-colors"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <Database className="text-blue-500" size={32} />
+                        <p className="text-sm text-gray-700 font-medium">
+                          {importedFromDrive.length > 0
+                            ? `${importedFromDrive.length} files imported from Google Drive`
+                            : 'Select files from Google Drive'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {loading ? 'Loading...' : 'Click to open Google Drive picker'}
+                        </p>
+                      </div>
+                    </button>
+                  )}
                   <div className="mt-8 p-6 bg-gray-50 rounded-xl">
                     <div className="flex items-start space-x-3">
                       <Info className="text-blue-500 mt-0.5" size={16} />
@@ -369,6 +449,15 @@ export const CreateWorkspace: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Google Drive Picker Modal */}
+      {showDrivePicker && tempWorkspaceId && (
+        <GoogleDrivePicker
+          workspaceId={tempWorkspaceId}
+          onClose={() => setShowDrivePicker(false)}
+          onImport={handleDriveImport}
+        />
+      )}
     </Layout>
   );
 };

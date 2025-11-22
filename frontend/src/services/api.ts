@@ -297,6 +297,58 @@ class ApiClient {
     );
     return response.data;
   }
+
+  // Google OAuth endpoints
+  async getGoogleAuthUrl(): Promise<{ authorization_url: string; state: string }> {
+    const response = await this.client.get('/auth/google/url');
+    return response.data;
+  }
+
+  async handleGoogleCallback(code: string, state: string): Promise<{
+    user_id: string;
+    email: string;
+    name: string;
+    avatar_url: string;
+    api_key: string;
+    message: string;
+  }> {
+    const response = await this.client.post('/auth/google/callback', { code, state });
+    // Store user_id and api_key
+    this.setAuth(response.data.user_id, response.data.api_key);
+    return response.data;
+  }
+
+  async listGoogleDriveFiles(folderId?: string): Promise<{
+    files: Array<{
+      id: string;
+      name: string;
+      mimeType: string;
+      size: string | null;
+      modifiedTime: string;
+      iconLink: string | null;
+    }>;
+    total: number;
+  }> {
+    const url = `/auth/google/drive/files?user_id=${this.userId}${folderId ? `&folder_id=${folderId}` : ''}`;
+    const response = await this.client.get(url);
+    return response.data;
+  }
+
+  async importFromGoogleDrive(workspaceId: string, fileIds: string[]): Promise<{
+    imported_count: number;
+    failed_count: number;
+    document_ids: string[];
+    errors: string[];
+  }> {
+    const response = await this.client.post(
+      `/auth/google/drive/import?user_id=${this.userId}`,
+      {
+        workspace_id: workspaceId,
+        file_ids: fileIds,
+      }
+    );
+    return response.data;
+  }
 }
 
 export const api = new ApiClient();
