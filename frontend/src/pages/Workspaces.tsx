@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Plus, FolderOpen, Trash2, ChevronRight } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -22,9 +22,17 @@ export const Workspaces: React.FC = () => {
       setWorkspaces(data || []);
     } catch (error: any) {
       console.error('Failed to load workspaces:', error);
-      // Show error to user
+      // Check if user is authenticated
+      const userId = localStorage.getItem('user_id');
+      if (!userId) {
+        console.error('No user_id found. User may not be logged in.');
+        // Redirect to login if not authenticated
+        window.location.href = '/login';
+        return;
+      }
+      // Show error to user without blocking
       const errorMessage = error.response?.data?.detail || error.message || 'Failed to load workspaces';
-      alert(`Error: ${errorMessage}`);
+      console.error('Workspaces error:', errorMessage);
       setWorkspaces([]); // Set empty array on error
     } finally {
       setLoading(false);
