@@ -20,9 +20,13 @@ export const Workspaces: React.FC = () => {
   const loadWorkspaces = async () => {
     try {
       const data = await api.listWorkspaces();
-      setWorkspaces(data);
-    } catch (error) {
+      setWorkspaces(data || []);
+    } catch (error: any) {
       console.error('Failed to load workspaces:', error);
+      // Show error to user
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to load workspaces';
+      alert(`Error: ${errorMessage}`);
+      setWorkspaces([]); // Set empty array on error
     } finally {
       setLoading(false);
     }

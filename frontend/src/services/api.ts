@@ -77,10 +77,13 @@ class ApiClient {
   }
 
   async listWorkspaces(): Promise<Workspace[]> {
+    if (!this.userId) {
+      throw new Error('User ID not found. Please log in.');
+    }
     const response = await this.client.get<Workspace[]>(
       `/workspace/list?user_id=${this.userId}`
     );
-    return response.data;
+    return response.data || [];
   }
 
   async getWorkspace(workspaceId: string): Promise<Workspace> {
