@@ -53,6 +53,15 @@ class TestDatasetResponse(BaseModel):
     created_at: str
 
 
+class TestQuestionResponse(BaseModel):
+    id: str
+    dataset_id: str
+    question: str
+    expected_answer: Optional[str]
+    context: Optional[str]
+    metadata: Optional[Dict[str, Any]]
+
+
 class CreateEvaluationRequest(BaseModel):
     workspace_id: str
     dataset_id: str
@@ -73,6 +82,64 @@ class EvaluationResponse(BaseModel):
     total_questions: int
     completed_questions: int
     created_at: str
+
+
+@router.get("/dataset/{dataset_id}", response_model=TestDatasetResponse)
+async def get_dataset(
+    dataset_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get a single dataset by ID.
+    """
+    dataset = get_test_dataset(db, UUID(dataset_id))
+
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found"
+        )
+
+    return TestDatasetResponse(
+        id=str(dataset.id),
+        workspace_id=str(dataset.workspace_id),
+        name=dataset.name,
+        description=dataset.description,
+        source=dataset.source,
+        total_questions=dataset.total_questions,
+        created_at=dataset.created_at.isoformat()
+    )
+
+
+@router.get("/dataset/{dataset_id}/questions", response_model=List[TestQuestionResponse])
+async def get_questions(
+    dataset_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all questions for a dataset.
+    """
+    dataset = get_test_dataset(db, UUID(dataset_id))
+
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found"
+        )
+
+    questions = get_dataset_questions(db, UUID(dataset_id))
+
+    return [
+        TestQuestionResponse(
+            id=str(q.id),
+            dataset_id=str(q.dataset_id),
+            question=q.question,
+            expected_answer=q.expected_answer,
+            context=q.context,
+            metadata=q.item_metadata
+        )
+        for q in questions
+    ]
 
 
 @router.post("/dataset/create", response_model=TestDatasetResponse)

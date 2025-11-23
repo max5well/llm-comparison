@@ -57,7 +57,7 @@ class GoogleOAuthService:
             access_type='offline',  # Get refresh token
             include_granted_scopes='true',
             state=state,
-            prompt='consent'  # Force consent to ensure refresh token
+            prompt='select_account'  # Show account chooser for multi-account users
         )
 
         return authorization_url, state

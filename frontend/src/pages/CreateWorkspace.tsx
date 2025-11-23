@@ -42,6 +42,7 @@ export const CreateWorkspace: React.FC = () => {
   const [showDrivePicker, setShowDrivePicker] = useState(false);
   const [importedFromDrive, setImportedFromDrive] = useState<string[]>([]);
   const [tempWorkspaceId, setTempWorkspaceId] = useState<string>('');
+  const [showNameModal, setShowNameModal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const chunkLabel = `${formData.chunk_size} tokens`;
   const formattedSize = files.length
@@ -77,8 +78,8 @@ export const CreateWorkspace: React.FC = () => {
     // If workspace doesn't exist yet, create it first
     if (!tempWorkspaceId) {
       if (!formData.name) {
-        alert('Please provide a workspace name first.');
-        setCurrentStep(3); // Go to review step to enter name
+        // Show modal to ask for workspace name instead of navigating away
+        setShowNameModal(true);
         return;
       }
 
@@ -98,6 +99,27 @@ export const CreateWorkspace: React.FC = () => {
       }
     } else {
       setShowDrivePicker(true);
+    }
+  };
+
+  const handleNameModalSubmit = async () => {
+    if (!formData.name) {
+      return;
+    }
+    setShowNameModal(false);
+    setLoading(true);
+    try {
+      const workspace = await api.createWorkspace({
+        ...formData,
+        data_source: 'google_drive',
+      });
+      setTempWorkspaceId(workspace.id);
+      setShowDrivePicker(true);
+    } catch (error: any) {
+      console.error('Failed to create workspace:', error);
+      alert(error.response?.data?.detail || 'Failed to create workspace');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -449,6 +471,45 @@ export const CreateWorkspace: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Workspace Name Modal */}
+      {showNameModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Please provide a workspace name first.
+            </h3>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter workspace name"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && formData.name) {
+                  handleNameModalSubmit();
+                }
+              }}
+              autoFocus
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowNameModal(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleNameModalSubmit}
+                disabled={!formData.name || loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed font-medium"
+              >
+                {loading ? 'Creating...' : 'OK'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Google Drive Picker Modal */}
       {showDrivePicker && tempWorkspaceId && (
