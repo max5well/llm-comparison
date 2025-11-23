@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
 
+    # Google OAuth & Drive Integration
+    google_client_id: Optional[str] = None
+    google_client_secret: Optional[str] = None
+    google_redirect_uri: str = "http://localhost:3000/auth/google/callback"
+
     # Default Settings
     default_chunk_size: int = 1000
     default_chunk_overlap: int = 200

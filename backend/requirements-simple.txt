@@ -21,15 +21,20 @@ chromadb
 
 # Utilities
 python-dotenv
-pydantic>=2.0.0
+pydantic[email]>=2.0.0
 pydantic-settings>=2.0.0
 requests
 tenacity
+email-validator
 
 # Auth
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt
+
+# Google OAuth & Drive
+google-auth-oauthlib
+google-api-python-client
 
 # Text processing
 tiktoken

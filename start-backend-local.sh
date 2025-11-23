@@ -33,7 +33,7 @@ source venv/bin/activate
 
 # Install dependencies
 echo "📥 Installing Python dependencies..."
-pip install -q -r requirements.txt
+pip install -q -r requirements-simple.txt
 
 # Create necessary directories
 mkdir -p data/chroma data/uploads logs
@@ -51,5 +51,6 @@ echo "Press Ctrl+C to stop the server"
 echo "================================================================"
 echo ""
 
-# Start the server
+# Set PYTHONPATH and start the server
+export PYTHONPATH=/Users/maxwell/Projects/llm-compare/backend:$PYTHONPATH
 python3 src/main.py

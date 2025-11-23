@@ -53,18 +53,6 @@ class TestDatasetResponse(BaseModel):
     created_at: str
 
 
-class TestQuestionResponse(BaseModel):
-    id: str
-    dataset_id: str
-    question: str
-    expected_answer: Optional[str]
-    context: Optional[str]
-    created_at: str
-
-    class Config:
-        from_attributes = True
-
-
 class CreateEvaluationRequest(BaseModel):
     workspace_id: str
     dataset_id: str
@@ -226,96 +214,6 @@ async def upload_test_questions_csv(
     }
 
 
-@router.post("/dataset/{dataset_id}/questions")
-async def add_question_to_dataset(
-    dataset_id: str,
-    question_data: dict,
-    db: Session = Depends(get_db)
-):
-    """
-    Add a single question to a dataset.
-    """
-    from src.db.queries import get_test_dataset, create_test_question
-
-    dataset = get_test_dataset(db, UUID(dataset_id))
-    if not dataset:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found"
-        )
-
-    question = create_test_question(
-        db,
-        dataset_id=UUID(dataset_id),
-        question=question_data["question"],
-        expected_answer=question_data.get("expected_answer"),
-        context=question_data.get("context")
-    )
-
-    return {
-        "id": str(question.id),
-        "message": "Question added successfully"
-    }
-
-
-@router.get("/dataset/{dataset_id}", response_model=TestDatasetResponse)
-async def get_dataset(
-    dataset_id: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Get a specific dataset.
-    """
-    dataset = get_test_dataset(db, UUID(dataset_id))
-
-    if not dataset:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found"
-        )
-
-    return TestDatasetResponse(
-        id=str(dataset.id),
-        workspace_id=str(dataset.workspace_id),
-        name=dataset.name,
-        description=dataset.description,
-        source=dataset.source,
-        total_questions=dataset.total_questions,
-        created_at=dataset.created_at.isoformat()
-    )
-
-
-@router.get("/dataset/{dataset_id}/questions", response_model=List[TestQuestionResponse])
-async def get_questions(
-    dataset_id: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Get all questions for a dataset.
-    """
-    dataset = get_test_dataset(db, UUID(dataset_id))
-
-    if not dataset:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dataset not found"
-        )
-
-    questions = get_dataset_questions(db, UUID(dataset_id))
-
-    return [
-        TestQuestionResponse(
-            id=str(q.id),
-            dataset_id=str(q.dataset_id),
-            question=q.question,
-            expected_answer=q.expected_answer,
-            context=q.context,
-            created_at=q.created_at.isoformat()
-        )
-        for q in questions
-    ]
-
-
 @router.post("/dataset/generate-synthetic", response_model=TestDatasetResponse)
 async def generate_synthetic_dataset(
     request: GenerateSyntheticDataRequest,
@@ -382,18 +280,11 @@ async def generate_synthetic_questions_background(
 
         documents = get_workspace_documents(db, workspace_id)
 
-        # Collect all chunks with document info
+        # Collect all chunks
         all_chunks = []
-        chunk_metadatas = []
         for doc in documents:
             chunks = get_document_chunks(db, doc.id)
-            for chunk in chunks[:10]:  # Limit per doc
-                all_chunks.append(chunk.content)
-                chunk_metadatas.append({
-                    'document_filename': doc.filename,
-                    'document_id': str(doc.id),
-                    'chunk_index': chunk.chunk_index
-                })
+            all_chunks.extend([chunk.content for chunk in chunks[:10]])  # Limit per doc
 
         if not all_chunks:
             return
@@ -407,53 +298,17 @@ async def generate_synthetic_questions_background(
         questions = await generator.generate_questions_from_chunks(
             chunks=all_chunks,
             num_questions_per_chunk=num_questions_per_chunk,
-            include_answers=include_answers,
-            chunk_metadatas=chunk_metadatas
+            include_answers=include_answers
         )
 
-        # Limit total questions to a reasonable number (num_questions_per_chunk * expected_chunks)
-        # But we'll let the frontend handle limiting to exact number
-        # Save to database - use filename as context instead of chunk content
+        # Save to database
         for q in questions:
-            # The context field should already contain the filename from SyntheticQuestion
-            # But let's also extract from metadata as a fallback to ensure accuracy
-            filename = q.context if q.context and q.context != 'Document' else None
-            
-            # Try to get from metadata if context is not a valid filename
-            if not filename or filename == 'Document':
-                chunk_metadata = q.metadata.get('chunk_metadata', {})
-                if isinstance(chunk_metadata, dict):
-                    filename = chunk_metadata.get('document_filename', None)
-            
-            # Final fallback
-            if not filename:
-                filename = 'Document'
-            
-            # Ensure we only store the filename, not full paths or URLs
-            # Extract just the filename if it's a path or URL
-            if '/' in filename:
-                filename = filename.split('/').pop() or filename
-            if '\\' in filename:
-                filename = filename.split('\\').pop() or filename
-            # Remove URL parameters
-            if '?' in filename:
-                filename = filename.split('?')[0]
-            if '#' in filename:
-                filename = filename.split('#')[0]
-            
-            # Ensure it looks like a filename (has an extension)
-            if not '.' in filename.split('/').pop().split('\\').pop():
-                # If it doesn't have an extension, try to get it from the document
-                chunk_metadata = q.metadata.get('chunk_metadata', {})
-                if isinstance(chunk_metadata, dict):
-                    filename = chunk_metadata.get('document_filename', filename)
-            
             create_test_question(
                 db=db,
                 dataset_id=dataset_id,
                 question=q.question,
                 expected_answer=q.expected_answer,
-                context=filename,  # Store filename instead of chunk content
+                context=q.context,
                 metadata=q.metadata
             )
 
@@ -516,13 +371,13 @@ async def create_evaluation_endpoint(
     )
 
     # Run evaluation in background
-    # Don't pass db session - background task will create its own
     background_tasks.add_task(
         run_evaluation_background,
         evaluation.id,
         request.models_to_test,
         request.judge_model,
-        request.judge_provider
+        request.judge_provider,
+        db
     )
 
     return EvaluationResponse(
@@ -542,18 +397,15 @@ async def run_evaluation_background(
     evaluation_id: UUID,
     models_to_test: List[Dict[str, str]],
     judge_model: str,
-    judge_provider: str
+    judge_provider: str,
+    db: Session
 ):
     """
     Background task to run evaluation.
 
     This will be a simplified version. Full implementation would be more complex.
     """
-    # Create a new database session for the background task
-    from src.db.database import get_db_context
-    
-    with get_db_context() as db:
-        try:
+    try:
         # Update status
         update_evaluation_status(db, evaluation_id, "running", started_at=datetime.utcnow())
 
@@ -619,42 +471,6 @@ Answer:"""
                     cost_usd=float(response.cost_usd)
                 )
 
-                # Evaluate quality metrics using LLM judge
-                try:
-                    quality_metrics = await judge.evaluate_all_quality_metrics(
-                        question=question.question,
-                        expected_answer=question.expected_answer,
-                        context=context,
-                        generated_answer=response.content
-                    )
-
-                    # Store quality metrics
-                    from src.db.models import QuestionMetrics
-                    import uuid
-
-                    metrics_record = QuestionMetrics(
-                        id=uuid.uuid4(),
-                        model_result_id=result.id,
-                        evaluation_id=evaluation_id,
-                        question_id=question.id,
-                        accuracy_score=quality_metrics['accuracy']['score'],
-                        faithfulness_score=quality_metrics['faithfulness']['score'],
-                        reasoning_score=quality_metrics['reasoning']['score'],
-                        context_utilization_score=quality_metrics['context_utilization']['score'],
-                        latency_ms=latency_ms,
-                        cost_usd=float(response.cost_usd),
-                        accuracy_explanation=quality_metrics['accuracy']['explanation'],
-                        faithfulness_explanation=quality_metrics['faithfulness']['explanation'],
-                        reasoning_explanation=quality_metrics['reasoning']['explanation'],
-                        context_utilization_explanation=quality_metrics['context_utilization']['explanation']
-                    )
-                    db.add(metrics_record)
-                    db.commit()
-
-                except Exception as metric_error:
-                    print(f"Error evaluating quality metrics: {str(metric_error)}")
-                    # Continue execution even if metrics fail
-
                 model_responses.append(result)
 
             # Compare pairs with judge (if 2 models)
@@ -692,89 +508,19 @@ Answer:"""
                 progress=progress
             )
 
-        # Calculate and store evaluation summary
-        try:
-            from src.db.models import QuestionMetrics, EvaluationSummary
-            from src.core.llm_judge import calculate_overall_score
+        # Mark as completed
+        update_evaluation_status(
+            db, evaluation_id, "completed",
+            completed_at=datetime.utcnow(),
+            progress=100
+        )
 
-            # Get all metrics for this evaluation
-            all_metrics = db.query(QuestionMetrics).filter(
-                QuestionMetrics.evaluation_id == evaluation_id
-            ).all()
-
-            if all_metrics:
-                # Calculate averages
-                total_metrics = len(all_metrics)
-                avg_accuracy = sum(m.accuracy_score for m in all_metrics if m.accuracy_score is not None) / sum(1 for m in all_metrics if m.accuracy_score is not None) if any(m.accuracy_score is not None for m in all_metrics) else None
-                avg_faithfulness = sum(m.faithfulness_score for m in all_metrics if m.faithfulness_score is not None) / sum(1 for m in all_metrics if m.faithfulness_score is not None) if any(m.faithfulness_score is not None for m in all_metrics) else None
-                avg_reasoning = sum(m.reasoning_score for m in all_metrics if m.reasoning_score is not None) / sum(1 for m in all_metrics if m.reasoning_score is not None) if any(m.reasoning_score is not None for m in all_metrics) else None
-                avg_context_util = sum(m.context_utilization_score for m in all_metrics if m.context_utilization_score is not None) / sum(1 for m in all_metrics if m.context_utilization_score is not None) if any(m.context_utilization_score is not None for m in all_metrics) else None
-                avg_latency = int(sum(m.latency_ms for m in all_metrics) / total_metrics)
-                avg_cost = sum(m.cost_usd for m in all_metrics) / total_metrics
-                total_cost = sum(m.cost_usd for m in all_metrics)
-
-                # Calculate overall score
-                overall = calculate_overall_score({
-                    "accuracy": avg_accuracy,
-                    "faithfulness": avg_faithfulness,
-                    "reasoning": avg_reasoning,
-                    "context_utilization": avg_context_util
-                })
-
-                # Group by model for model-specific summaries
-                models_summary = {}
-                for model_config in models_to_test:
-                    model_key = f"{model_config['provider']}:{model_config['model']}"
-
-                    # Get metrics for this specific model
-                    # Note: Would need proper join with ModelResult table to filter by model
-                    # For now, we store the model config in summary
-
-                    # Filter by checking model_result's model name (would need join)
-                    # For now, store aggregate data
-                    models_summary[model_key] = {
-                        "model": model_config['model'],
-                        "provider": model_config['provider']
-                    }
-
-                # Store summary
-                summary = EvaluationSummary(
-                    id=uuid.uuid4(),
-                    evaluation_id=evaluation_id,
-                    avg_accuracy=avg_accuracy,
-                    avg_faithfulness=avg_faithfulness,
-                    avg_reasoning=avg_reasoning,
-                    avg_context_utilization=avg_context_util,
-                    avg_latency_ms=avg_latency,
-                    avg_cost_usd=avg_cost,
-                    total_cost_usd=total_cost,
-                    overall_score=overall,
-                    total_questions=len(questions),
-                    total_model_tests=total_metrics,
-                    successful_evaluations=total_metrics,
-                    failed_evaluations=0,
-                    models_summary=models_summary
-                )
-                db.add(summary)
-                db.commit()
-
-        except Exception as summary_error:
-            print(f"Error calculating summary metrics: {str(summary_error)}")
-
-            # Mark as completed
-            update_evaluation_status(
-                db, evaluation_id, "completed",
-                completed_at=datetime.utcnow(),
-                progress=100
-            )
-        except Exception as e:
-            update_evaluation_status(
-                db, evaluation_id, "failed",
-                error_message=str(e)
-            )
-            print(f"Error running evaluation: {str(e)}")
-            import traceback
-            traceback.print_exc()
+    except Exception as e:
+        update_evaluation_status(
+            db, evaluation_id, "failed",
+            error_message=str(e)
+        )
+        print(f"Error running evaluation: {str(e)}")
 
 
 @router.get("/{evaluation_id}", response_model=EvaluationResponse)
@@ -848,103 +594,3 @@ async def list_workspace_evaluations(
         )
         for e in evaluations
     ]
-
-
-@router.get("/{evaluation_id}/summary")
-async def get_evaluation_summary(
-    evaluation_id: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Get evaluation summary with aggregate metrics.
-    Returns average scores across all models and questions.
-    """
-    from src.db.models import EvaluationSummary
-
-    summary = db.query(EvaluationSummary).filter(
-        EvaluationSummary.evaluation_id == UUID(evaluation_id)
-    ).first()
-
-    if not summary:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Evaluation summary not found"
-        )
-
-    return {
-        "evaluation_id": str(summary.evaluation_id),
-        "avg_accuracy": float(summary.avg_accuracy) if summary.avg_accuracy else None,
-        "avg_faithfulness": float(summary.avg_faithfulness) if summary.avg_faithfulness else None,
-        "avg_reasoning": float(summary.avg_reasoning) if summary.avg_reasoning else None,
-        "avg_context_utilization": float(summary.avg_context_utilization) if summary.avg_context_utilization else None,
-        "avg_latency_ms": summary.avg_latency_ms,
-        "avg_cost_usd": float(summary.avg_cost_usd),
-        "total_cost_usd": float(summary.total_cost_usd),
-        "overall_score": float(summary.overall_score) if summary.overall_score else None,
-        "total_questions": summary.total_questions,
-        "total_model_tests": summary.total_model_tests,
-        "successful_evaluations": summary.successful_evaluations,
-        "failed_evaluations": summary.failed_evaluations,
-        "models_summary": summary.models_summary,
-        "created_at": summary.created_at.isoformat()
-    }
-
-
-@router.get("/{evaluation_id}/metrics")
-async def get_evaluation_metrics_endpoint(
-    evaluation_id: str,
-    db: Session = Depends(get_db)
-):
-    """
-    Get detailed metrics for all question-model combinations in an evaluation.
-    Returns metrics grouped by model.
-    """
-    from src.db.models import QuestionMetrics, ModelResult
-
-    # Get all metrics with model results
-    metrics = db.query(QuestionMetrics, ModelResult).join(
-        ModelResult,
-        QuestionMetrics.model_result_id == ModelResult.id
-    ).filter(
-        QuestionMetrics.evaluation_id == UUID(evaluation_id)
-    ).all()
-
-    if not metrics:
-        return {
-            "evaluation_id": evaluation_id,
-            "metrics_by_model": {},
-            "total_metrics": 0
-        }
-
-    # Group by model
-    metrics_by_model = {}
-
-    for metric, result in metrics:
-        model_key = f"{result.provider}/{result.model_name}"
-
-        if model_key not in metrics_by_model:
-            metrics_by_model[model_key] = {
-                "model": result.model_name,
-                "provider": result.provider,
-                "questions": []
-            }
-
-        metrics_by_model[model_key]["questions"].append({
-            "question_id": str(metric.question_id),
-            "accuracy_score": float(metric.accuracy_score) if metric.accuracy_score else None,
-            "faithfulness_score": float(metric.faithfulness_score) if metric.faithfulness_score else None,
-            "reasoning_score": float(metric.reasoning_score) if metric.reasoning_score else None,
-            "context_utilization_score": float(metric.context_utilization_score) if metric.context_utilization_score else None,
-            "latency_ms": metric.latency_ms,
-            "cost_usd": float(metric.cost_usd),
-            "accuracy_explanation": metric.accuracy_explanation,
-            "faithfulness_explanation": metric.faithfulness_explanation,
-            "reasoning_explanation": metric.reasoning_explanation,
-            "context_utilization_explanation": metric.context_utilization_explanation
-        })
-
-    return {
-        "evaluation_id": evaluation_id,
-        "metrics_by_model": metrics_by_model,
-        "total_metrics": len(metrics)
-    }
