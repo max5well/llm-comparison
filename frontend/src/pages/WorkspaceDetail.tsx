@@ -184,7 +184,7 @@ export const WorkspaceDetail: React.FC = () => {
     try {
       const documentChunks = await api.getDocumentChunks(documentId);
       setChunks(documentChunks);
-    } catch (error) {
+        } catch (error) {
       console.error('Failed to load chunks:', error);
       alert('Failed to load chunks');
       setChunksModalOpen(false);
@@ -261,8 +261,8 @@ export const WorkspaceDetail: React.FC = () => {
           }
         });
         setShowConfirmModal(true);
-        return;
-      }
+      return;
+    }
     }
     
     // No reprocessing needed, just save
@@ -282,8 +282,8 @@ export const WorkspaceDetail: React.FC = () => {
       if (id) {
         setTimeout(async () => {
           try {
-            const documentsData = await api.listDocuments(id);
-            setDocuments(documentsData);
+        const documentsData = await api.listDocuments(id);
+        setDocuments(documentsData);
           } catch (error) {
             console.error('Failed to reload documents:', error);
           }
@@ -314,7 +314,7 @@ export const WorkspaceDetail: React.FC = () => {
         onConfirm: () => {
           setShowConfirmModal(false);
           setConfirmModalConfig(null);
-        }
+      }
       });
       setShowConfirmModal(true);
     } finally {
@@ -368,7 +368,7 @@ export const WorkspaceDetail: React.FC = () => {
     processing: documents.filter(doc => doc.processing_status === 'processing').length,
     completed: documents.filter(doc => doc.processing_status === 'completed').length,
     failed: documents.filter(doc => doc.processing_status === 'failed').length,
-  };
+    };
 
   const totalChunks = documents.reduce((sum, doc) => sum + (doc.total_chunks || 0), 0);
 
@@ -408,20 +408,20 @@ export const WorkspaceDetail: React.FC = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <button
+          <button
                 onClick={() => setShowSettings(true)}
                 className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:border-gray-400"
-              >
+          >
                 Settings
-              </button>
+          </button>
               <Link
                 to={`/workspaces/${workspace.id}/datasets/new`}
                 className="px-4 py-2 bg-blue-500 text-white rounded-xl text-sm font-semibold hover:bg-blue-600"
               >
                 Create Dataset
               </Link>
+              </div>
             </div>
-          </div>
           {workspace.description && <p className="text-gray-600">{workspace.description}</p>}
           <div className="flex flex-wrap items-center gap-3">
             <span className="px-3 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-semibold flex items-center gap-2">
@@ -468,9 +468,9 @@ export const WorkspaceDetail: React.FC = () => {
                 {documents.length > 0
                   ? formatDistanceToNow(new Date(documents[0].created_at), { addSuffix: true })
                   : 'just now'}
-              </span>
-            </div>
-          </div>
+                      </span>
+                    </div>
+                    </div>
           <div className="border-t border-gray-100 px-6 py-6 space-y-6">
             {activeTab === 'documents' && (
               <>
@@ -485,7 +485,7 @@ export const WorkspaceDetail: React.FC = () => {
                     />
                     <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                       <Search size={16} />
-                    </div>
+              </div>
                   </div>
                   <button
                     onClick={() => setShowFilterModal(true)}
@@ -535,14 +535,14 @@ export const WorkspaceDetail: React.FC = () => {
                     onChange={handleFileChange}
                     accept=".pdf,.docx,.doc,.txt,.md,.markdown,.text,.html,.htm,.csv,.xlsx,.xls,.json,.pptx,.ppt,.rtf,.odt,.py,.js,.ts,.tsx,.jsx,.java,.cpp,.c,.h,.cs,.go,.rb,.php,.swift,.kt,.rs,.sql,.sh,.bash,.yaml,.yml,.xml,.css,.scss,.less"
                   />
-                </div>
+            </div>
 
                 <div className="space-y-4">
                   {filteredDocuments.length === 0 ? (
                     <div className="text-center py-12 text-gray-600">
                       {searchQuery ? 'No documents match your search.' : 'No documents yet. Upload to begin.'}
-                    </div>
-                  ) : (
+              </div>
+            ) : (
                     filteredDocuments.map((document) => (
                       <div
                         key={document.id}
@@ -558,16 +558,16 @@ export const WorkspaceDetail: React.FC = () => {
                               <div className="flex items-center space-x-4 text-sm text-gray-500">
                                 <span>{formatFileSize(document.file_size_bytes)}</span>
                                 <span>•</span>
-                                <button
+                              <button
                                   onClick={() => document.processing_status === 'completed' && document.total_chunks > 0 ? handleViewChunks(document.id) : null}
                                   className={`${document.processing_status === 'completed' && document.total_chunks > 0 ? 'hover:text-blue-600 cursor-pointer underline' : ''}`}
                                   disabled={document.processing_status !== 'completed' || document.total_chunks === 0}
                                 >
                                   {document.total_chunks} {document.total_chunks === 1 ? 'chunk' : 'chunks'}
-                                </button>
+                              </button>
                                 <span>•</span>
                                 <span>Uploaded {formatDistanceToNow(new Date(document.created_at), { addSuffix: true })}</span>
-                              </div>
+                            </div>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -583,14 +583,14 @@ export const WorkspaceDetail: React.FC = () => {
                               )}
                               {document.processing_status.charAt(0).toUpperCase() + document.processing_status.slice(1)}
                             </span>
-                            <button
+                              <button
                               onClick={() => handleDeleteDocument(document.id)}
                               className="w-8 h-8 rounded-lg hover:bg-gray-100 transition flex items-center justify-center text-gray-400 hover:text-red-600"
                               title="Delete document"
-                            >
+                              >
                               <Trash2 size={16} />
-                            </button>
-                          </div>
+                              </button>
+                        </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <div className="flex-1 bg-gray-100 rounded-full h-1.5">
@@ -620,8 +620,8 @@ export const WorkspaceDetail: React.FC = () => {
                             {document.processing_status === 'completed' ? '100%' :
                              document.processing_status === 'processing' ? '67%' :
                              document.processing_status === 'failed' ? 'Failed' : '0%'}
-                          </span>
-                        </div>
+                        </span>
+                      </div>
                         {document.processing_status === 'failed' && document.error_message && (
                           <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3">
                             <div className="flex items-start space-x-2">
@@ -629,57 +629,57 @@ export const WorkspaceDetail: React.FC = () => {
                               <div className="flex-1">
                                 <div className="text-sm font-medium text-red-900 mb-1">Embedding Failed</div>
                                 <div className="text-xs text-red-700">{document.error_message}</div>
-                              </div>
-                            </div>
                           </div>
-                        )}
                       </div>
+                    </div>
+                    )}
+                  </div>
                     ))
-                  )}
-                </div>
-              </>
             )}
+          </div>
+              </>
+        )}
 
-            {activeTab === 'datasets' && (
-              <div className="space-y-4">
-                {datasets.length === 0 ? (
+        {activeTab === 'datasets' && (
+          <div className="space-y-4">
+            {datasets.length === 0 ? (
                   <div className="text-center py-12 text-gray-600">No datasets yet. Create one to evaluate models.</div>
-                ) : (
+            ) : (
                   <div className="grid gap-4">
-                    {datasets.map((dataset) => (
-                      <Link
-                        key={dataset.id}
-                        to={`/datasets/${dataset.id}`}
+                {datasets.map((dataset) => (
+                  <Link
+                    key={dataset.id}
+                    to={`/datasets/${dataset.id}`}
                         className="block bg-gray-50 rounded-2xl border border-gray-200 p-5 hover:border-blue-200 transition"
-                      >
+                  >
                         <div className="flex justify-between items-center">
-                          <div>
+                      <div>
                             <h3 className="text-lg font-semibold text-gray-900">{dataset.name}</h3>
                             <p className="text-sm text-gray-500">{dataset.total_questions} questions</p>
-                          </div>
-                          <span className="text-xs text-gray-500">{new Date(dataset.created_at).toLocaleDateString()}</span>
                         </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                          <span className="text-xs text-gray-500">{new Date(dataset.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
             )}
+          </div>
+        )}
 
-            {activeTab === 'evaluations' && (
-              <div className="space-y-4">
+        {activeTab === 'evaluations' && (
+          <div className="space-y-4">
                 {(!evaluations || evaluations.length === 0) && (
                   <div className="text-center py-12 text-gray-600">No evaluations yet. Schedule one to compare models.</div>
                 )}
-                <div className="space-y-3">
+              <div className="space-y-3">
                   {evaluations.map((evaluation) => {
                     if (!evaluation) return null;
                     return (
-                      <Link
-                        key={evaluation.id}
-                        to={`/results/${evaluation.id}`}
+                  <Link
+                    key={evaluation.id}
+                    to={`/results/${evaluation.id}`}
                         className="block bg-gray-50 rounded-2xl border border-gray-200 p-5 hover:border-blue-200 transition"
-                      >
+                  >
                         <div className="flex flex-col gap-3">
                           <div className="flex flex-wrap justify-between gap-3">
                             <h3 className="text-lg font-semibold text-gray-900">
@@ -687,22 +687,22 @@ export const WorkspaceDetail: React.FC = () => {
                             </h3>
                             <span className={`px-3 py-1 text-xs font-semibold rounded-full ${getStatusPill(evaluation.status || 'pending')}`}>
                               {evaluation.status || 'pending'}
-                            </span>
-                          </div>
+                          </span>
+                        </div>
                           {evaluation.models_to_test && evaluation.models_to_test.length > 0 && (
                             <div className="flex flex-wrap gap-2">
-                              {evaluation.models_to_test.map((model, idx) => (
+                          {evaluation.models_to_test.map((model, idx) => (
                                 <span key={idx} className="px-3 py-1 bg-blue-50 text-blue-700 text-xs rounded-full border border-blue-100">
-                                  {model.provider}: {model.model}
-                                </span>
-                              ))}
-                            </div>
+                              {model.provider}: {model.model}
+                            </span>
+                          ))}
+                        </div>
                           )}
                           <div className="text-sm text-gray-500">
                             {evaluation.judge_provider && evaluation.judge_model && (
                               <>
-                                Judge: {evaluation.judge_provider} - {evaluation.judge_model}
-                                {' • '}
+                          Judge: {evaluation.judge_provider} - {evaluation.judge_model}
+                          {' • '}
                               </>
                             )}
                             {evaluation.created_at
@@ -712,11 +712,11 @@ export const WorkspaceDetail: React.FC = () => {
                         </div>
                       </Link>
                     );
-                  })}
-                </div>
-              </div>
+                          })}
+                        </div>
+                      </div>
             )}
-          </div>
+                    </div>
         </section>
 
         <section className="grid gap-6 md:grid-cols-4">
@@ -833,7 +833,7 @@ export const WorkspaceDetail: React.FC = () => {
                     <option key={provider.value} value={provider.value}>
                       {provider.label}
                     </option>
-                  ))}
+                ))}
                 </select>
               </div>
               <div>
@@ -867,8 +867,8 @@ export const WorkspaceDetail: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+              </div>
+            )}
 
       {/* Chunks Modal */}
       {chunksModalOpen && (
@@ -888,7 +888,7 @@ export const WorkspaceDetail: React.FC = () => {
               >
                 <XCircle size={24} className="text-gray-500" />
               </button>
-            </div>
+          </div>
             <div className="flex-1 overflow-y-auto p-6">
               {loadingChunks ? (
                 <div className="text-center py-12">
@@ -913,8 +913,8 @@ export const WorkspaceDetail: React.FC = () => {
                           <span className="text-xs text-gray-500">
                             {chunk.token_count} tokens
                           </span>
-                        )}
-                      </div>
+        )}
+      </div>
                       <p className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed">
                         {chunk.content}
                       </p>

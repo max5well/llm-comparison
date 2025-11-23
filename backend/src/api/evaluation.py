@@ -553,7 +553,7 @@ async def run_evaluation_background(
     from src.db.database import get_db_context
     
     with get_db_context() as db:
-        try:
+    try:
         # Update status
         update_evaluation_status(db, evaluation_id, "running", started_at=datetime.utcnow())
 
@@ -761,18 +761,18 @@ Answer:"""
         except Exception as summary_error:
             print(f"Error calculating summary metrics: {str(summary_error)}")
 
-            # Mark as completed
-            update_evaluation_status(
-                db, evaluation_id, "completed",
-                completed_at=datetime.utcnow(),
-                progress=100
-            )
-        except Exception as e:
-            update_evaluation_status(
-                db, evaluation_id, "failed",
-                error_message=str(e)
-            )
-            print(f"Error running evaluation: {str(e)}")
+        # Mark as completed
+        update_evaluation_status(
+            db, evaluation_id, "completed",
+            completed_at=datetime.utcnow(),
+            progress=100
+        )
+    except Exception as e:
+        update_evaluation_status(
+            db, evaluation_id, "failed",
+            error_message=str(e)
+        )
+        print(f"Error running evaluation: {str(e)}")
             import traceback
             traceback.print_exc()
 

@@ -303,7 +303,7 @@ async def upload_document(
 
     # Check file type using DocumentExtractor's supported types
     from src.utils.document_extraction import DocumentExtractor
-    
+
     if not DocumentExtractor.is_supported_file(file.filename):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
