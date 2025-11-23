@@ -74,14 +74,11 @@ export const CreateWorkspace: React.FC = () => {
   };
 
   const handleOpenDrivePicker = async () => {
+    // Name validation is handled by button disabled state
+    if (!formData.name) return;
+
     // If workspace doesn't exist yet, create it first
     if (!tempWorkspaceId) {
-      if (!formData.name) {
-        alert('Please provide a workspace name first.');
-        setCurrentStep(3); // Go to review step to enter name
-        return;
-      }
-
       setLoading(true);
       try {
         const workspace = await api.createWorkspace({
@@ -92,7 +89,8 @@ export const CreateWorkspace: React.FC = () => {
         setShowDrivePicker(true);
       } catch (error: any) {
         console.error('Failed to create workspace:', error);
-        alert(error.response?.data?.detail || 'Failed to create workspace');
+        const errorMsg = error.response?.data?.detail || 'Failed to create workspace';
+        alert(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -250,25 +248,49 @@ export const CreateWorkspace: React.FC = () => {
                     </label>
                   )}
 
-                  {/* Google Drive Picker Button - only shown for drive source */}
+                  {/* Google Drive - Name input and picker */}
                   {dataSource === 'drive' && (
-                    <button
-                      onClick={handleOpenDrivePicker}
-                      disabled={loading}
-                      className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer hover:border-blue-500 transition-colors"
-                    >
-                      <div className="flex flex-col items-center gap-2">
-                        <Database className="text-blue-500" size={32} />
-                        <p className="text-sm text-gray-700 font-medium">
-                          {importedFromDrive.length > 0
-                            ? `${importedFromDrive.length} files imported from Google Drive`
-                            : 'Select files from Google Drive'}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {loading ? 'Loading...' : 'Click to open Google Drive picker'}
+                    <div className="space-y-4">
+                      {/* Workspace name input for Google Drive flow */}
+                      <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl p-4">
+                        <label className="text-sm font-semibold text-gray-700 block mb-2">
+                          Workspace Name (Required)
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="e.g., My RAG Workspace"
+                          className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Provide a name before selecting files from Google Drive
                         </p>
                       </div>
-                    </button>
+
+                      {/* Drive Picker Button */}
+                      <button
+                        onClick={handleOpenDrivePicker}
+                        disabled={loading || !formData.name}
+                        className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center bg-gray-50 cursor-pointer hover:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <Database className="text-blue-500" size={32} />
+                          <p className="text-sm text-gray-700 font-medium">
+                            {importedFromDrive.length > 0
+                              ? `${importedFromDrive.length} files imported from Google Drive`
+                              : 'Select files from Google Drive'}
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {loading
+                              ? 'Loading...'
+                              : !formData.name
+                              ? 'Enter workspace name above first'
+                              : 'Click to open Google Drive picker'}
+                          </p>
+                        </div>
+                      </button>
+                    </div>
                   )}
                   <div className="mt-8 p-6 bg-gray-50 rounded-xl">
                     <div className="flex items-start space-x-3">
