@@ -2,8 +2,8 @@
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
-import os
 import secrets
+from src.core.config import get_settings
 
 SCOPES = [
     'https://www.googleapis.com/auth/userinfo.email',
@@ -16,12 +16,10 @@ class GoogleOAuthService:
     """Handle Google OAuth 2.0 authentication flow."""
 
     def __init__(self):
-        self.client_id = os.getenv('GOOGLE_CLIENT_ID')
-        self.client_secret = os.getenv('GOOGLE_CLIENT_SECRET')
-        self.redirect_uri = os.getenv(
-            'GOOGLE_REDIRECT_URI',
-            'http://localhost:3000/auth/google/callback'
-        )
+        settings = get_settings()
+        self.client_id = settings.google_client_id
+        self.client_secret = settings.google_client_secret
+        self.redirect_uri = settings.google_redirect_uri
 
         if not self.client_id or not self.client_secret:
             print("⚠️  Warning: Google OAuth credentials not configured")
