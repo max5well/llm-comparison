@@ -197,13 +197,28 @@ export const CreateDataset: React.FC = () => {
         }));
 
         setQuestions([...generatedQuestions, ...questions]);
-        alert(`Successfully generated ${limitedQuestions.length} questions!`);
+        setInfoModalConfig({
+          title: 'Success!',
+          message: `Successfully generated ${limitedQuestions.length} questions!`,
+          type: 'success'
+        });
+        setShowInfoModal(true);
       } else {
-        alert('Questions are being generated in the background. Please check back in a moment.');
+        setInfoModalConfig({
+          title: 'Generation In Progress',
+          message: 'Questions are being generated in the background. Please check back in a moment.',
+          type: 'info'
+        });
+        setShowInfoModal(true);
       }
     } catch (error) {
       console.error('Failed to generate questions:', error);
-      alert('Failed to generate questions. Please try again.');
+      setInfoModalConfig({
+        title: 'Generation Failed',
+        message: 'Failed to generate questions. Please try again.',
+        type: 'error'
+      });
+      setShowInfoModal(true);
     } finally {
       setGeneratingAI(false);
       setGenerationProgress('');
@@ -537,12 +552,21 @@ export const CreateDataset: React.FC = () => {
                   <Sparkles size={16} className="inline mr-2" />
                   {generatingAI ? 'Generating...' : `Generate ${numQuestions} Questions`}
                 </button>
-                {generatingAI && generationProgress && (
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                {generatingAI && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
                     <div className="flex items-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-3"></div>
-                      <p className="text-sm text-blue-900">{generationProgress}</p>
+                      <p className="text-sm text-blue-900 font-medium">
+                        {generationProgress || 'Generating questions...'}
+                      </p>
                     </div>
+                    {/* Progress bar */}
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{width: '70%'}}></div>
+                    </div>
+                    <p className="text-xs text-blue-700">
+                      This may take up to 30 seconds depending on the number of documents...
+                    </p>
                   </div>
                 )}
               </div>
@@ -789,6 +813,50 @@ export const CreateDataset: React.FC = () => {
             </button>
           </div>
         </form>
+
+        {/* Info Modal */}
+        {showInfoModal && infoModalConfig && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+              <div className="flex items-start space-x-3 mb-4">
+                {infoModalConfig.type === 'success' && (
+                  <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="text-green-600" size={20} />
+                  </div>
+                )}
+                {infoModalConfig.type === 'error' && (
+                  <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <X className="text-red-600" size={20} />
+                  </div>
+                )}
+                {infoModalConfig.type === 'info' && (
+                  <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Info className="text-blue-600" size={20} />
+                  </div>
+                )}
+                <div className="flex-1">
+                  {infoModalConfig.title && (
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {infoModalConfig.title}
+                    </h3>
+                  )}
+                  <p className="text-gray-600">{infoModalConfig.message}</p>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setShowInfoModal(false);
+                    setInfoModalConfig(null);
+                  }}
+                  className="btn-primary"
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );
