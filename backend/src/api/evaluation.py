@@ -142,6 +142,39 @@ async def get_questions(
     ]
 
 
+@router.post("/dataset/{dataset_id}/questions")
+async def add_question_to_dataset(
+    dataset_id: str,
+    request: dict,  # Expecting {question, expected_answer?, context?}
+    db: Session = Depends(get_db)
+):
+    """
+    Add a single question to an existing dataset.
+    """
+    dataset = get_test_dataset(db, UUID(dataset_id))
+
+    if not dataset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Dataset not found"
+        )
+
+    # Create the question
+    question = create_test_question(
+        db=db,
+        dataset_id=UUID(dataset_id),
+        question=request.get('question', ''),
+        expected_answer=request.get('expected_answer'),
+        context=request.get('context')
+    )
+
+    # Update dataset total questions count
+    dataset.total_questions = len(get_dataset_questions(db, UUID(dataset_id)))
+    db.commit()
+
+    return {"success": True, "question_id": str(question.id)}
+
+
 @router.post("/dataset/create", response_model=TestDatasetResponse)
 async def create_dataset(
     request: CreateTestDatasetRequest,
