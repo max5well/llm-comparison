@@ -152,10 +152,15 @@ async def get_google_drive_connect_url():
     This endpoint is for connecting their Drive account to enable file imports.
     """
     try:
+        from src.core.google_oauth import DRIVE_SCOPES
+
         oauth_service = GoogleOAuthService()
-        # Use the Drive callback redirect URI
+        # Use the Drive callback redirect URI and Drive scopes
         drive_redirect_uri = "http://localhost:3000/auth/google/drive/callback"
-        auth_url, state = oauth_service.get_authorization_url(redirect_uri=drive_redirect_uri)
+        auth_url, state = oauth_service.get_authorization_url(
+            redirect_uri=drive_redirect_uri,
+            scopes=DRIVE_SCOPES  # Request Drive access
+        )
 
         return GoogleAuthUrlResponse(
             authorization_url=auth_url,

@@ -5,7 +5,14 @@ from google_auth_oauthlib.flow import Flow
 import secrets
 from src.core.config import get_settings
 
-SCOPES = [
+# Scopes for user login (profile only, no Drive access)
+LOGIN_SCOPES = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+]
+
+# Scopes for Drive connection (includes Drive access)
+DRIVE_SCOPES = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
     'https://www.googleapis.com/auth/drive.readonly'
@@ -24,13 +31,14 @@ class GoogleOAuthService:
         if not self.client_id or not self.client_secret:
             print("⚠️  Warning: Google OAuth credentials not configured")
 
-    def get_authorization_url(self, state: str = None, redirect_uri: str = None) -> tuple[str, str]:
+    def get_authorization_url(self, state: str = None, redirect_uri: str = None, scopes: list = None) -> tuple[str, str]:
         """
         Generate Google OAuth authorization URL.
 
         Args:
             state: Optional CSRF protection token
             redirect_uri: Optional custom redirect URI (defaults to self.redirect_uri)
+            scopes: Optional list of OAuth scopes (defaults to LOGIN_SCOPES)
 
         Returns:
             tuple: (authorization_url, state_token)
@@ -39,6 +47,7 @@ class GoogleOAuthService:
             state = secrets.token_urlsafe(32)
 
         redirect = redirect_uri or self.redirect_uri
+        oauth_scopes = scopes or LOGIN_SCOPES  # Default to login scopes (no Drive)
 
         flow = Flow.from_client_config(
             {
@@ -50,7 +59,7 @@ class GoogleOAuthService:
                     "redirect_uris": [redirect]
                 }
             },
-            scopes=SCOPES,
+            scopes=oauth_scopes,
             redirect_uri=redirect
         )
 
