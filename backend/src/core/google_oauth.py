@@ -24,18 +24,21 @@ class GoogleOAuthService:
         if not self.client_id or not self.client_secret:
             print("⚠️  Warning: Google OAuth credentials not configured")
 
-    def get_authorization_url(self, state: str = None) -> tuple[str, str]:
+    def get_authorization_url(self, state: str = None, redirect_uri: str = None) -> tuple[str, str]:
         """
         Generate Google OAuth authorization URL.
 
         Args:
             state: Optional CSRF protection token
+            redirect_uri: Optional custom redirect URI (defaults to self.redirect_uri)
 
         Returns:
             tuple: (authorization_url, state_token)
         """
         if not state:
             state = secrets.token_urlsafe(32)
+
+        redirect = redirect_uri or self.redirect_uri
 
         flow = Flow.from_client_config(
             {
@@ -44,11 +47,11 @@ class GoogleOAuthService:
                     "client_secret": self.client_secret,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [self.redirect_uri]
+                    "redirect_uris": [redirect]
                 }
             },
             scopes=SCOPES,
-            redirect_uri=self.redirect_uri
+            redirect_uri=redirect
         )
 
         authorization_url, _ = flow.authorization_url(
@@ -60,16 +63,19 @@ class GoogleOAuthService:
 
         return authorization_url, state
 
-    def exchange_code_for_tokens(self, code: str) -> dict:
+    def exchange_code_for_tokens(self, code: str, redirect_uri: str = None) -> dict:
         """
         Exchange authorization code for access and refresh tokens.
 
         Args:
             code: Authorization code from OAuth callback
+            redirect_uri: Optional custom redirect URI (defaults to self.redirect_uri)
 
         Returns:
             dict: Token information
         """
+        redirect = redirect_uri or self.redirect_uri
+
         flow = Flow.from_client_config(
             {
                 "web": {
@@ -77,11 +83,11 @@ class GoogleOAuthService:
                     "client_secret": self.client_secret,
                     "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                     "token_uri": "https://oauth2.googleapis.com/token",
-                    "redirect_uris": [self.redirect_uri]
+                    "redirect_uris": [redirect]
                 }
             },
             scopes=SCOPES,
-            redirect_uri=self.redirect_uri
+            redirect_uri=redirect
         )
 
         flow.fetch_token(code=code)

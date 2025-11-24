@@ -153,7 +153,9 @@ async def get_google_drive_connect_url():
     """
     try:
         oauth_service = GoogleOAuthService()
-        auth_url, state = oauth_service.get_authorization_url()
+        # Use the Drive callback redirect URI
+        drive_redirect_uri = "http://localhost:3000/auth/google/drive/callback"
+        auth_url, state = oauth_service.get_authorization_url(redirect_uri=drive_redirect_uri)
 
         return GoogleAuthUrlResponse(
             authorization_url=auth_url,
@@ -191,8 +193,9 @@ async def google_drive_connect_callback(
 
         oauth_service = GoogleOAuthService()
 
-        # Exchange code for tokens
-        token_info = oauth_service.exchange_code_for_tokens(request.code)
+        # Exchange code for tokens using Drive callback redirect URI
+        drive_redirect_uri = "http://localhost:3000/auth/google/drive/callback"
+        token_info = oauth_service.exchange_code_for_tokens(request.code, redirect_uri=drive_redirect_uri)
 
         # Get user info from Google
         user_info = oauth_service.get_user_info(token_info['access_token'])
