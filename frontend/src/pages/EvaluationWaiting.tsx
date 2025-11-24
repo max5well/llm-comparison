@@ -32,15 +32,15 @@ export const EvaluationWaiting: React.FC = () => {
           try {
             await api.getEvaluationDetails(id);
             clearInterval(interval);
-            // Data is ready, redirect to human rating page
-            navigate(`/evaluations/${id}/rating`);
+            // Data is ready, redirect to results page
+            navigate(`/results/${id}`);
           } catch (error) {
             // Results not ready yet, keep waiting
             verificationAttempts++;
             if (verificationAttempts >= maxVerificationAttempts) {
               clearInterval(interval);
-              // After max attempts, redirect anyway - HumanRating will retry
-              navigate(`/evaluations/${id}/rating`);
+              // After max attempts, redirect anyway - Results page will handle retries
+              navigate(`/results/${id}`);
             }
           }
         } else if (status.status === 'failed') {
