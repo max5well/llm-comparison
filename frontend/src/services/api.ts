@@ -349,6 +349,41 @@ class ApiClient {
     );
     return response.data;
   }
+
+  // NEW: Google Drive Connection (Separate from Login)
+  async getGoogleDriveConnectUrl(): Promise<{ authorization_url: string; state: string }> {
+    const response = await this.client.get('/auth/google/drive/connect/url');
+    return response.data;
+  }
+
+  async handleGoogleDriveConnectCallback(code: string, state: string): Promise<{
+    success: boolean;
+    message: string;
+    connected_email: string;
+  }> {
+    const response = await this.client.post(
+      `/auth/google/drive/connect/callback?user_id=${this.userId}`,
+      { code, state }
+    );
+    return response.data;
+  }
+
+  async getGoogleDriveStatus(): Promise<{
+    is_connected: boolean;
+    email: string | null;
+    connected_at: string | null;
+  }> {
+    const response = await this.client.get(`/auth/google/drive/status?user_id=${this.userId}`);
+    return response.data;
+  }
+
+  async disconnectGoogleDrive(): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    const response = await this.client.delete(`/auth/google/drive/disconnect?user_id=${this.userId}`);
+    return response.data;
+  }
 }
 
 export const api = new ApiClient();

@@ -75,6 +75,34 @@ export const CreateWorkspace: React.FC = () => {
   };
 
   const handleOpenDrivePicker = async () => {
+    // Check if user has connected Google Drive
+    try {
+      const driveStatus = await api.getGoogleDriveStatus();
+
+      if (!driveStatus.is_connected) {
+        // User hasn't connected Drive - prompt them to connect first
+        if (confirm('You need to connect your Google Drive first. Would you like to connect now?')) {
+          const { authorization_url, state } = await api.getGoogleDriveConnectUrl();
+
+          // Store state for CSRF verification and return path
+          sessionStorage.setItem('google_drive_connect_state', state);
+          sessionStorage.setItem('return_to_create_workspace', 'true');
+          if (formData.name) {
+            sessionStorage.setItem('pending_workspace_name', formData.name);
+          }
+
+          // Redirect to Google OAuth
+          window.location.href = authorization_url;
+        }
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to check Drive status:', error);
+      alert('Failed to check Google Drive connection status');
+      return;
+    }
+
+    // Drive is connected - proceed with workspace creation
     // If workspace doesn't exist yet, create it first
     if (!tempWorkspaceId) {
       if (!formData.name) {

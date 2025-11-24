@@ -5,6 +5,7 @@ import { api } from './services/api';
 // Pages
 import { Login } from './pages/Login';
 import { GoogleCallback } from './pages/GoogleCallback';
+import { GoogleDriveCallback } from './pages/GoogleDriveCallback';
 import { Home } from './pages/Home';
 import { Workspaces } from './pages/Workspaces';
 import { CreateWorkspace } from './pages/CreateWorkspace';
@@ -32,6 +33,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        <Route path="/auth/google/drive/callback" element={<GoogleDriveCallback />} />
 
         <Route
           path="/dashboard"

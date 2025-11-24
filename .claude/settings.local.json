@@ -30,7 +30,8 @@
       "Bash(xargs kill:*)",
       "Bash(echo:*)",
       "Bash(env)",
-      "Bash(unset:*)"
+      "Bash(unset:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

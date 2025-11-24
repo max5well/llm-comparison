@@ -135,6 +135,185 @@ class GoogleDriveImportResponse(BaseModel):
     errors: list[str]
 
 
+class GoogleDriveConnectionStatus(BaseModel):
+    is_connected: bool
+    email: str | None
+    connected_at: str | None
+
+
+# ==================== NEW: Google Drive Connection (Separate from Login) ====================
+
+@router.get("/google/drive/connect/url", response_model=GoogleAuthUrlResponse)
+async def get_google_drive_connect_url():
+    """
+    Get Google OAuth URL specifically for connecting Google Drive.
+
+    This is separate from user authentication - users should already be logged in.
+    This endpoint is for connecting their Drive account to enable file imports.
+    """
+    try:
+        oauth_service = GoogleOAuthService()
+        auth_url, state = oauth_service.get_authorization_url()
+
+        return GoogleAuthUrlResponse(
+            authorization_url=auth_url,
+            state=state
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate Drive connection URL: {str(e)}"
+        )
+
+
+@router.post("/google/drive/connect/callback")
+async def google_drive_connect_callback(
+    request: GoogleCallbackRequest,
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Handle Google OAuth callback for Drive connection.
+
+    This connects a Google Drive account to an existing authenticated user.
+    Does NOT create a new user account.
+    """
+    try:
+        from src.db.models import User
+
+        # Get existing user
+        user = db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        oauth_service = GoogleOAuthService()
+
+        # Exchange code for tokens
+        token_info = oauth_service.exchange_code_for_tokens(request.code)
+
+        # Get user info from Google
+        user_info = oauth_service.get_user_info(token_info['access_token'])
+
+        # Parse token expiry
+        token_expiry = None
+        if token_info.get('expiry'):
+            token_expiry = datetime.fromisoformat(token_info['expiry'].replace('Z', '+00:00'))
+
+        # Update user's Google Drive tokens
+        user.google_id = user_info['id']
+        user.google_access_token = token_info['access_token']
+        user.google_refresh_token = token_info.get('refresh_token')
+        user.google_token_expiry = token_expiry
+
+        db.commit()
+        db.refresh(user)
+
+        return {
+            "success": True,
+            "message": "Google Drive connected successfully",
+            "connected_email": user_info['email']
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to connect Google Drive: {str(e)}"
+        )
+
+
+@router.get("/google/drive/status", response_model=GoogleDriveConnectionStatus)
+async def get_google_drive_status(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Check if user has connected their Google Drive account.
+    """
+    try:
+        from src.db.models import User
+
+        user = db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        is_connected = bool(user.google_access_token)
+
+        # Try to get the Google email from user info if connected
+        google_email = None
+        if is_connected and user.google_access_token:
+            try:
+                oauth_service = GoogleOAuthService()
+                user_info = oauth_service.get_user_info(user.google_access_token)
+                google_email = user_info.get('email')
+            except:
+                # Token might be expired, but still show as connected
+                pass
+
+        return GoogleDriveConnectionStatus(
+            is_connected=is_connected,
+            email=google_email,
+            connected_at=user.google_token_expiry.isoformat() if user.google_token_expiry else None
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to check Drive status: {str(e)}"
+        )
+
+
+@router.delete("/google/drive/disconnect")
+async def disconnect_google_drive(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Disconnect Google Drive from user account.
+    """
+    try:
+        from src.db.models import User
+
+        user = db.query(User).filter(User.id == UUID(user_id)).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Clear Google Drive tokens
+        user.google_id = None
+        user.google_access_token = None
+        user.google_refresh_token = None
+        user.google_token_expiry = None
+
+        db.commit()
+
+        return {
+            "success": True,
+            "message": "Google Drive disconnected successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to disconnect Google Drive: {str(e)}"
+        )
+
+
+# ==================== OLD: Google OAuth for Login (Deprecated) ====================
+
 @router.get("/google/url", response_model=GoogleAuthUrlResponse)
 async def get_google_auth_url():
     """

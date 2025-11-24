@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Key, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
-import { GoogleSignInButton } from '../components/GoogleSignInButton';
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -59,23 +58,8 @@ export const Login: React.FC = () => {
           <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-5">
             <h2 className="text-xl font-semibold text-gray-900">Create Account</h2>
             <p className="text-sm text-gray-500">
-              Sign up with Google or email to get started.
+              Enter your email to create an account and receive your API key.
             </p>
-
-            {/* Google Sign-In */}
-            <GoogleSignInButton
-              onError={(err) => setError(err)}
-            />
-
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-white text-gray-500">Or continue with email</span>
-              </div>
-            </div>
 
             {/* Email Signup Form */}
             <form onSubmit={handleSignup} className="space-y-4">
