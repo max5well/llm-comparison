@@ -283,17 +283,17 @@ class ApiClient {
     return response.data;
   }
 
-  // New Evaluation Metrics endpoints
+  // Evaluation Metrics endpoints - use /results prefix (matches backend)
   async getEvaluationMetrics(evaluationId: string): Promise<any> {
     const response = await this.client.get(
-      `/evaluation/${evaluationId}/metrics`
+      `/results/${evaluationId}/detailed`
     );
     return response.data;
   }
 
   async getEvaluationMetricsSummary(evaluationId: string): Promise<any> {
     const response = await this.client.get(
-      `/evaluation/${evaluationId}/summary`
+      `/results/${evaluationId}/summary`
     );
     return response.data;
   }
