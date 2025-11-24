@@ -72,18 +72,20 @@ class GoogleOAuthService:
 
         return authorization_url, state
 
-    def exchange_code_for_tokens(self, code: str, redirect_uri: str = None) -> dict:
+    def exchange_code_for_tokens(self, code: str, redirect_uri: str = None, scopes: list = None) -> dict:
         """
         Exchange authorization code for access and refresh tokens.
 
         Args:
             code: Authorization code from OAuth callback
             redirect_uri: Optional custom redirect URI (defaults to self.redirect_uri)
+            scopes: Optional list of OAuth scopes (defaults to LOGIN_SCOPES)
 
         Returns:
             dict: Token information
         """
         redirect = redirect_uri or self.redirect_uri
+        oauth_scopes = scopes or LOGIN_SCOPES
 
         flow = Flow.from_client_config(
             {
@@ -95,7 +97,7 @@ class GoogleOAuthService:
                     "redirect_uris": [redirect]
                 }
             },
-            scopes=SCOPES,
+            scopes=oauth_scopes,
             redirect_uri=redirect
         )
 

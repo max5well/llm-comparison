@@ -199,8 +199,9 @@ async def google_drive_connect_callback(
         oauth_service = GoogleOAuthService()
 
         # Exchange code for tokens using Drive callback redirect URI
+        from src.core.google_oauth import DRIVE_SCOPES
         drive_redirect_uri = "http://localhost:3000/auth/google/drive/callback"
-        token_info = oauth_service.exchange_code_for_tokens(request.code, redirect_uri=drive_redirect_uri)
+        token_info = oauth_service.exchange_code_for_tokens(request.code, redirect_uri=drive_redirect_uri, scopes=DRIVE_SCOPES)
 
         # Get user info from Google
         user_info = oauth_service.get_user_info(token_info['access_token'])
