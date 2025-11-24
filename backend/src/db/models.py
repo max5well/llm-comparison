@@ -23,6 +23,8 @@ class User(Base):
     google_access_token = Column(Text)
     google_refresh_token = Column(Text)
     google_token_expiry = Column(TIMESTAMP(timezone=True))
+    google_scopes = Column(Text)  # Comma-separated list of granted OAuth scopes
+    google_drive_connected = Column(Boolean, default=False)  # Explicitly tracks Drive connection
     avatar_url = Column(Text)
     name = Column(Text)
 

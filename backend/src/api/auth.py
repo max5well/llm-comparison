@@ -211,11 +211,13 @@ async def google_drive_connect_callback(
         if token_info.get('expiry'):
             token_expiry = datetime.fromisoformat(token_info['expiry'].replace('Z', '+00:00'))
 
-        # Update user's Google Drive tokens
+        # Update user's Google Drive tokens (with Drive access)
         user.google_id = user_info['id']
         user.google_access_token = token_info['access_token']
         user.google_refresh_token = token_info.get('refresh_token')
         user.google_token_expiry = token_expiry
+        user.google_scopes = ','.join(token_info.get('scopes', []))
+        user.google_drive_connected = True  # Mark Drive as explicitly connected
 
         db.commit()
         db.refresh(user)
@@ -253,7 +255,8 @@ async def get_google_drive_status(
                 detail="User not found"
             )
 
-        is_connected = bool(user.google_access_token)
+        # Check if Drive is explicitly connected (not just logged in)
+        is_connected = bool(user.google_drive_connected)
 
         # Try to get the Google email from user info if connected
         google_email = None
@@ -299,11 +302,13 @@ async def disconnect_google_drive(
                 detail="User not found"
             )
 
-        # Clear Google Drive tokens
+        # Clear Google Drive tokens and connection status
         user.google_id = None
         user.google_access_token = None
         user.google_refresh_token = None
         user.google_token_expiry = None
+        user.google_scopes = None
+        user.google_drive_connected = False
 
         db.commit()
 
@@ -376,10 +381,12 @@ async def google_oauth_callback(
         user = db.query(User).filter(User.google_id == user_info['id']).first()
 
         if user:
-            # Update existing user's tokens
+            # Update existing user's tokens (login only, no Drive access)
             user.google_access_token = token_info['access_token']
             user.google_refresh_token = token_info.get('refresh_token') or user.google_refresh_token
             user.google_token_expiry = token_expiry
+            user.google_scopes = ','.join(token_info.get('scopes', []))
+            # Note: google_drive_connected remains False unless explicitly connected via Drive flow
             user.avatar_url = user_info.get('picture')
             user.name = user_info.get('name')
             db.commit()
@@ -408,6 +415,8 @@ async def google_oauth_callback(
                 google_access_token=token_info['access_token'],
                 google_refresh_token=token_info.get('refresh_token'),
                 google_token_expiry=token_expiry,
+                google_scopes=','.join(token_info.get('scopes', [])),
+                google_drive_connected=False,  # Login only, Drive not connected yet
                 avatar_url=user_info.get('picture'),
                 name=user_info.get('name'),
                 is_active=True

@@ -31,7 +31,8 @@
       "Bash(echo:*)",
       "Bash(env)",
       "Bash(unset:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": [],
     "ask": []
