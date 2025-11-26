@@ -17,17 +17,44 @@ import { Results } from './pages/Results';
 import { Settings } from './pages/Settings';
 import { DashboardHome } from './pages/DashboardHome';
 import { EvaluationWaiting } from './pages/EvaluationWaiting';
+import { JudgmentSelection } from './pages/JudgmentSelection';
+import { JudgmentWaiting } from './pages/JudgmentWaiting';
 import { HumanRating } from './pages/HumanRating';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  if (!api.isAuthenticated()) {
+  const isAuth = api.isAuthenticated();
+  console.log('ProtectedRoute check:', {
+    isAuthenticated: isAuth,
+    user_id: localStorage.getItem('user_id'),
+    api_key: localStorage.getItem('api_key') ? '***set***' : null,
+    location: window.location.pathname
+  });
+
+  if (!isAuth) {
+    console.log('Not authenticated, redirecting to /login');
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
 };
 
 function App() {
+  console.log('App component rendered');
+
+  // Log every route change
+  React.useEffect(() => {
+    const logRouteChange = () => {
+      console.log('Route changed to:', window.location.pathname, 'isAuthenticated:', api.isAuthenticated());
+    };
+
+    // Log initial route
+    logRouteChange();
+
+    // Listen for route changes
+    window.addEventListener('popstate', logRouteChange);
+    return () => window.removeEventListener('popstate', logRouteChange);
+  }, []);
+
   return (
     <Router>
       <Routes>
@@ -46,11 +73,7 @@ function App() {
 
         <Route
           path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
+          element={<Home />}
         />
 
         <Route
@@ -112,6 +135,24 @@ function App() {
           element={
             <ProtectedRoute>
               <EvaluationWaiting />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/evaluations/:id/judgment"
+          element={
+            <ProtectedRoute>
+              <JudgmentSelection />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/evaluations/:id/judging"
+          element={
+            <ProtectedRoute>
+              <JudgmentWaiting />
             </ProtectedRoute>
           }
         />

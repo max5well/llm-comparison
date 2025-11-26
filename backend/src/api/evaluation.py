@@ -348,8 +348,7 @@ async def generate_synthetic_dataset(
         request.num_questions_per_chunk,
         request.include_answers,
         request.generation_model,
-        request.generation_provider,
-        db
+        request.generation_provider
     )
 
     return TestDatasetResponse(
@@ -369,10 +368,11 @@ async def generate_synthetic_questions_background(
     num_questions_per_chunk: int,
     include_answers: bool,
     generation_model: str,
-    generation_provider: str,
-    db: Session
+    generation_provider: str
 ):
     """Background task to generate synthetic questions."""
+    from src.db.database import SessionLocal
+    db = SessionLocal()
     try:
         # Get workspace and documents
         workspace = get_workspace(db, workspace_id)
@@ -419,6 +419,8 @@ async def generate_synthetic_questions_background(
 
     except Exception as e:
         print(f"Error generating synthetic questions: {str(e)}")
+    finally:
+        db.close()
 
 
 @router.post("/create", response_model=EvaluationResponse)
@@ -476,8 +478,7 @@ async def create_evaluation_endpoint(
         evaluation.id,
         request.models_to_test,
         request.judge_model,
-        request.judge_provider,
-        db
+        request.judge_provider
     )
 
     return EvaluationResponse(
@@ -497,46 +498,75 @@ async def run_evaluation_background(
     evaluation_id: UUID,
     models_to_test: List[Dict[str, str]],
     judge_model: str,
-    judge_provider: str,
-    db: Session
+    judge_provider: str
 ):
     """
     Background task to run evaluation.
 
     This will be a simplified version. Full implementation would be more complex.
     """
+    from src.db.database import SessionLocal
+    db = SessionLocal()
     try:
+        print(f"\n=== Starting evaluation {evaluation_id} ===")
+
         # Update status
+        print("Step 1: Updating evaluation status to 'running'")
         update_evaluation_status(db, evaluation_id, "running", started_at=datetime.utcnow())
 
         # Get evaluation details
+        print("Step 2: Fetching evaluation, questions, and workspace")
         evaluation = get_evaluation(db, evaluation_id)
         questions = get_dataset_questions(db, evaluation.dataset_id)
         workspace = get_workspace(db, evaluation.workspace_id)
+        print(f"Found {len(questions)} questions to evaluate")
 
         # Initialize RAG index
-        rag_index = RAGIndex(
-            collection_name=workspace.vector_collection_id,
-            embedding_provider=workspace.embedding_provider,
-            embedding_model=workspace.embedding_model
-        )
+        print(f"Step 3: Initializing RAG index with collection: {workspace.vector_collection_id}")
+        try:
+            rag_index = RAGIndex(
+                collection_name=workspace.vector_collection_id,
+                embedding_provider=workspace.embedding_provider,
+                embedding_model=workspace.embedding_model
+            )
+            print("RAG index initialized successfully")
+        except Exception as e:
+            print(f"ERROR initializing RAG index: {str(e)}")
+            raise Exception(f"Failed to initialize RAG index: {str(e)}")
 
         # Initialize judge
-        judge = LLMJudge(provider=judge_provider, model=judge_model)
+        print(f"Step 4: Initializing judge with provider={judge_provider}, model={judge_model}")
+        try:
+            judge = LLMJudge(provider=judge_provider, model=judge_model)
+            print("Judge initialized successfully")
+        except Exception as e:
+            print(f"ERROR initializing judge: {str(e)}")
+            raise Exception(f"Failed to initialize judge: {str(e)}")
 
         # Process each question
+        print(f"\nStep 5: Processing {len(questions)} questions")
         for idx, question in enumerate(questions):
+            print(f"\n--- Question {idx + 1}/{len(questions)}: {question.question[:50]}... ---")
+
             # Retrieve context
-            results = await rag_index.query(question.question, top_k=5)
-            context = "\n\n".join(results['documents'])
+            try:
+                print(f"  5.{idx}.1: Querying RAG index")
+                results = await rag_index.query(question.question, top_k=5)
+                context = "\n\n".join(results['documents'])
+                print(f"  Retrieved {len(results['documents'])} chunks")
+            except Exception as e:
+                print(f"  ERROR querying RAG index: {str(e)}")
+                raise Exception(f"Failed to query RAG index for question {idx + 1}: {str(e)}")
 
             # Get answers from each model
             model_responses = []
-            for model_config in models_to_test:
+            for model_idx, model_config in enumerate(models_to_test):
+                print(f"  5.{idx}.{model_idx + 2}: Testing model {model_config['provider']}:{model_config['model']}")
                 start_time = time.time()
 
-                # Create prompt
-                prompt = f"""Answer the following question based on the provided context.
+                try:
+                    # Create prompt
+                    prompt = f"""Answer the following question based on the provided context.
 
 Context:
 {context}
@@ -545,63 +575,83 @@ Question: {question.question}
 
 Answer:"""
 
-                llm = get_llm_provider(model_config['provider'])
-                messages = [LLMMessage(role="user", content=prompt)]
+                    print(f"    Getting LLM provider: {model_config['provider']}")
+                    llm = get_llm_provider(model_config['provider'])
+                    messages = [LLMMessage(role="user", content=prompt)]
 
-                response = await llm.generate(
-                    messages=messages,
-                    model=model_config['model'],
-                    temperature=0.7
-                )
+                    print(f"    Calling LLM.generate()")
+                    response = await llm.generate(
+                        messages=messages,
+                        model=model_config['model'],
+                        temperature=0.7
+                    )
 
-                latency_ms = int((time.time() - start_time) * 1000)
+                    latency_ms = int((time.time() - start_time) * 1000)
+                    print(f"    Response received in {latency_ms}ms")
 
-                # Store result
-                result = create_model_result(
-                    db=db,
-                    evaluation_id=evaluation_id,
-                    question_id=question.id,
-                    model_name=model_config['model'],
-                    provider=model_config['provider'],
-                    answer=response.content,
-                    retrieved_chunks=results,
-                    tokens_in=response.tokens_in,
-                    tokens_out=response.tokens_out,
-                    latency_ms=latency_ms,
-                    cost_usd=float(response.cost_usd)
-                )
+                    # Store result
+                    print(f"    Storing model result in database")
+                    result = create_model_result(
+                        db=db,
+                        evaluation_id=evaluation_id,
+                        question_id=question.id,
+                        model_name=model_config['model'],
+                        provider=model_config['provider'],
+                        answer=response.content,
+                        retrieved_chunks=results,
+                        tokens_in=response.tokens_in,
+                        tokens_out=response.tokens_out,
+                        latency_ms=latency_ms,
+                        cost_usd=float(response.cost_usd)
+                    )
 
-                model_responses.append(result)
+                    model_responses.append(result)
+                    print(f"    Model result saved successfully")
+
+                except Exception as e:
+                    print(f"    ERROR with model {model_config['provider']}:{model_config['model']}: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    raise Exception(f"Failed to get response from {model_config['provider']}:{model_config['model']}: {str(e)}")
 
             # Compare pairs with judge (if 2 models)
             if len(model_responses) == 2:
-                judge_result = await judge.judge_pair(
-                    question=question.question,
-                    answer_a=model_responses[0].answer,
-                    answer_b=model_responses[1].answer,
-                    context=context,
-                    expected_answer=question.expected_answer
-                )
+                print(f"  5.{idx}.judge: Running judge comparison")
+                try:
+                    judge_result = await judge.judge_pair(
+                        question=question.question,
+                        answer_a=model_responses[0].answer,
+                        answer_b=model_responses[1].answer,
+                        context=context,
+                        expected_answer=question.expected_answer
+                    )
 
-                create_judge_result(
-                    db=db,
-                    evaluation_id=evaluation_id,
-                    question_id=question.id,
-                    model_a_result_id=model_responses[0].id,
-                    model_b_result_id=model_responses[1].id,
-                    judge_model=judge_model,
-                    judge_provider=judge_provider,
-                    winner=judge_result.winner,
-                    score_a=judge_result.score_a,
-                    score_b=judge_result.score_b,
-                    reasoning=judge_result.reasoning,
-                    confidence=judge_result.confidence,
-                    criteria_scores=judge_result.criteria_scores
-                )
+                    create_judge_result(
+                        db=db,
+                        evaluation_id=evaluation_id,
+                        question_id=question.id,
+                        model_a_result_id=model_responses[0].id,
+                        model_b_result_id=model_responses[1].id,
+                        judge_model=judge_model,
+                        judge_provider=judge_provider,
+                        winner=judge_result.winner,
+                        score_a=judge_result.score_a,
+                        score_b=judge_result.score_b,
+                        reasoning=judge_result.reasoning,
+                        confidence=judge_result.confidence,
+                        criteria_scores=judge_result.criteria_scores
+                    )
+                    print(f"  Judge result saved successfully")
+                except Exception as e:
+                    print(f"  ERROR in judge comparison: {str(e)}")
+                    import traceback
+                    traceback.print_exc()
+                    raise Exception(f"Failed to run judge for question {idx + 1}: {str(e)}")
 
             # Update progress
             completed = idx + 1
             progress = int((completed / len(questions)) * 100)
+            print(f"  Progress: {progress}% ({completed}/{len(questions)} completed)")
             update_evaluation_status(
                 db, evaluation_id, "running",
                 completed_questions=completed,
@@ -609,18 +659,28 @@ Answer:"""
             )
 
         # Mark as completed
+        print("\nStep 6: Marking evaluation as completed")
         update_evaluation_status(
             db, evaluation_id, "completed",
             completed_at=datetime.utcnow(),
             progress=100
         )
+        print(f"=== Evaluation {evaluation_id} completed successfully ===\n")
 
     except Exception as e:
+        error_msg = str(e)
+        print(f"\n!!! EVALUATION FAILED !!!")
+        print(f"Error: {error_msg}")
+        import traceback
+        traceback.print_exc()
+
         update_evaluation_status(
             db, evaluation_id, "failed",
-            error_message=str(e)
+            error_message=error_msg
         )
-        print(f"Error running evaluation: {str(e)}")
+        print(f"Error running evaluation: {error_msg}")
+    finally:
+        db.close()
 
 
 @router.get("/{evaluation_id}", response_model=EvaluationResponse)
@@ -694,3 +754,150 @@ async def list_workspace_evaluations(
         )
         for e in evaluations
     ]
+
+
+@router.post("/{evaluation_id}/judge")
+async def start_judgment(
+    evaluation_id: str,
+    request: dict,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """
+    Start judgment process for a completed evaluation.
+    """
+    try:
+        evaluation_uuid = UUID(evaluation_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid evaluation ID format")
+
+    # Check if evaluation exists and is completed
+    evaluation = get_evaluation(db, evaluation_uuid)
+    if not evaluation:
+        raise HTTPException(status_code=404, detail="Evaluation not found")
+
+    if evaluation.status != "completed":
+        raise HTTPException(status_code=400, detail="Evaluation must be completed before judgment")
+
+    # Get judgment type
+    judgment_type = request.get("judgment_type")
+    if not judgment_type or judgment_type not in ["human", "llm", "both"]:
+        raise HTTPException(status_code=400, detail="Invalid judgment type. Must be 'human', 'llm', or 'both'")
+
+    # Update evaluation status
+    evaluation.status = "judging"
+    evaluation.judgment_type = judgment_type
+    db.commit()
+
+    # Start judgment in background
+    background_tasks.add_task(run_judgment_background, evaluation_id, judgment_type)
+
+    return {"message": f"Judgment process started with type: {judgment_type}"}
+
+
+async def run_judgment_background(
+    evaluation_id: str,
+    judgment_type: str
+):
+    """
+    Background task to run judgment process.
+    """
+    from src.core.config import settings
+    from src.db.database import SessionLocal
+    from src.core.llm_judge import LLMJudge
+    from src.core.llm_providers import get_llm_provider
+    from src.api.results import create_judgment_result
+
+    print(f"\n=== Starting judgment for evaluation {evaluation_id} with type: {judgment_type} ===")
+
+    db = SessionLocal()
+    try:
+        # Get evaluation details
+        evaluation = get_evaluation(db, UUID(evaluation_id))
+        if not evaluation:
+            print(f"Evaluation {evaluation_id} not found")
+            return
+
+        # Get model results
+        model_results = get_model_results(db, UUID(evaluation_id))
+
+        if judgment_type in ["llm", "both"]:
+            # Use LLM judge for automatic evaluation
+            print("Step 1: Initializing LLM judge")
+            judge_provider = "openai"  # Default judge provider
+            judge_model = "gpt-4o-mini"  # Default judge model
+
+            try:
+                judge = LLMJudge(provider=judge_provider, model=judge_model)
+
+                print(f"Step 2: Processing {len(model_results)} model results with LLM judge")
+
+                for i, model_result in enumerate(model_results):
+                    print(f"Processing result {i+1}/{len(model_results)} for model {model_result.model_name}")
+
+                    try:
+                        # Create judge result
+                        judge_result = await judge.evaluate(
+                            question_id=model_result.question_id,
+                            model_response=model_result.response,
+                            context=model_result.context,
+                            ground_truth=None  # No ground truth for RAG evaluation
+                        )
+
+                        # Save to database
+                        create_judgment_result(
+                            db=db,
+                            evaluation_id=UUID(evaluation_id),
+                            model_result_id=model_result.id,
+                            judge_response=judge_result.content,
+                            score=judge_result.score,
+                            feedback=judge_result.feedback,
+                            judgment_provider=judge_result.provider,
+                            judgment_model=judge_result.model
+                        )
+
+                        print(f"Completed judgment for result {model_result.id}")
+
+                    except Exception as e:
+                        print(f"Error judging result {model_result.id}: {str(e)}")
+                        continue
+
+                print("Step 3: LLM judgment completed")
+
+            except Exception as e:
+                print(f"Error in LLM judgment: {str(e)}")
+
+        if judgment_type in ["human", "both"]:
+            # Human judgment would require additional implementation
+            print(f"Human judgment requested - would need frontend implementation")
+            # For now, we'll create placeholder results
+            for model_result in model_results:
+                try:
+                    create_judgment_result(
+                        db=db,
+                        evaluation_id=UUID(evaluation_id),
+                        model_result_id=model_result.id,
+                        judge_response="Human judgment pending",
+                        score=0.0,
+                        feedback="Human judgment not yet implemented",
+                        judgment_provider="human",
+                        judgment_model="manual"
+                    )
+                except Exception as e:
+                    print(f"Error creating placeholder human judgment: {str(e)}")
+                    continue
+
+        # Update evaluation status
+        evaluation.status = "completed"
+        evaluation.completed_at = datetime.utcnow()
+        db.commit()
+
+        print(f"=== Judgment process completed for evaluation {evaluation_id} ===")
+
+    except Exception as e:
+        print(f"Error in judgment background task: {str(e)}")
+        # Update evaluation status to failed
+        evaluation.status = "failed"
+        db.commit()
+    finally:
+        db.close()
