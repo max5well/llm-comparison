@@ -120,13 +120,13 @@ Generate exactly {num_questions} question(s). Return ONLY the JSON array, no oth
         for idx, q_data in enumerate(questions_data):
             # Store chunk metadata with each question so we can track the source document
             question_metadata = {
-                'question_type': q_data.get('question_type', 'unknown'),
-                'difficulty': q_data.get('difficulty', 'medium'),
-                'generation_model': self.model,
-                'generation_provider': self.provider.provider_name,
-                'chunk_metadata': chunk_metadata or {},
-                'index': idx
-            }
+                    'question_type': q_data.get('question_type', 'unknown'),
+                    'difficulty': q_data.get('difficulty', 'medium'),
+                    'generation_model': self.model,
+                    'generation_provider': self.provider.provider_name,
+                    'chunk_metadata': chunk_metadata or {},
+                    'index': idx
+                }
             
             # Extract filename from chunk_metadata if available for easier access
             source_filename = 'Document'

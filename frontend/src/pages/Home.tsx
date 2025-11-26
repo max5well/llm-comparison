@@ -164,24 +164,24 @@ export const Home: React.FC = () => {
                       <div className="text-4xl font-bold text-gray-900">94.2%</div>
                       <div className="text-sm text-green-600 flex items-center gap-1">
                         <i className="fa-solid fa-arrow-up"></i> +2.3%
-                      </div>
-                    </div>
+                  </div>
+                </div>
                     <div className="space-y-2">
                       <div className="text-sm text-gray-500 font-medium">UX Pilot 3</div>
                       <div className="text-4xl font-bold text-gray-900">91.8%</div>
                       <div className="text-sm text-green-600 flex items-center gap-1">
                         <i className="fa-solid fa-arrow-up"></i> +1.7%
-                      </div>
-                    </div>
+                  </div>
+                </div>
                   </div>
                   <div className="mt-6">
                     <div className="flex justify-between text-sm text-gray-600">
                       <span>Performance</span>
                       <span className="font-semibold text-gray-900">Excellent</span>
-                    </div>
+                  </div>
                     <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden mt-2">
                       <div className="h-full bg-primary-600 rounded-full" style={{ width: '94%' }} />
-                    </div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -205,13 +205,13 @@ export const Home: React.FC = () => {
                 >
                   <div className="w-16 h-16 bg-primary-100 rounded-xl flex items-center justify-center mb-6">
                     <feature.icon className="text-primary-600" size={28} />
-                  </div>
+                </div>
                   <h3 className="text-2xl font-bold text-gray-900 mb-4">{feature.title}</h3>
                   <p className="text-lg text-gray-600 leading-relaxed">{feature.description}</p>
                 </article>
               ))}
-            </div>
-          </div>
+                </div>
+                </div>
         </section>
 
         <section id="how-it-works" className="py-24 bg-gradient-to-br from-gray-50 to-primary-50">
@@ -221,7 +221,7 @@ export const Home: React.FC = () => {
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 Get started with LLM Compare in three simple steps.
               </p>
-            </div>
+                </div>
             <div className="grid md:grid-cols-3 gap-12">
               {steps.map((step) => (
                 <article
@@ -230,13 +230,13 @@ export const Home: React.FC = () => {
                 >
                   <div className="w-20 h-20 bg-primary-600 text-white rounded-2xl flex items-center justify-center text-3xl font-bold mb-6">
                     {step.number}
-                  </div>
+                </div>
                   <h3 className="text-3xl font-bold text-gray-900 mb-4">{step.title}</h3>
                   <p className="text-lg text-gray-600 leading-relaxed">{step.description}</p>
                 </article>
               ))}
-            </div>
-          </div>
+                </div>
+                </div>
         </section>
 
         <section id="testimonials" className="py-24 bg-white">
@@ -246,7 +246,7 @@ export const Home: React.FC = () => {
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 See how organizations are making smarter AI decisions with LLM Compare.
               </p>
-            </div>
+                </div>
             <div className="grid md:grid-cols-3 gap-10">
               {testimonials.map((testimonial) => (
                 <article key={testimonial.author} className="bg-gray-50 rounded-2xl p-10 border-2 border-gray-200 hover:border-primary-600 transition-all">
@@ -256,12 +256,12 @@ export const Home: React.FC = () => {
                     <Star size={20} />
                     <Star size={20} />
                     <Star size={20} />
-                  </div>
+                </div>
                   <p className="text-xl text-gray-700 leading-relaxed mb-8">"{testimonial.quote}"</p>
                   <div>
                     <p className="text-lg font-semibold text-gray-900">{testimonial.author}</p>
                     <p className="text-sm text-gray-600">{testimonial.title}</p>
-                  </div>
+              </div>
                 </article>
               ))}
             </div>

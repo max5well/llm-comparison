@@ -284,25 +284,25 @@ export const Results: React.FC = () => {
                 {metricsSummary.avg_accuracy ? `${(metricsSummary.avg_accuracy * 100).toFixed(1)}%` : 'N/A'}
               </div>
               <div className="text-xs text-gray-500 mt-1">LLM-graded</div>
-            </div>
+              </div>
 
             {/* Faithfulness */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Faithfulness</span>
                 <Shield className="text-purple-500" size={18} />
-              </div>
+                </div>
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_faithfulness ? `${(metricsSummary.avg_faithfulness * 100).toFixed(1)}%` : 'N/A'}
-              </div>
-            </div>
+                </div>
+                </div>
 
             {/* Context Utilization */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-gray-600">Context Utilization</span>
                 <ListChecks className="text-indigo-500" size={18} />
-              </div>
+                </div>
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_context_utilization ? `${(metricsSummary.avg_context_utilization * 100).toFixed(1)}%` : 'N/A'}
               </div>
@@ -317,8 +317,8 @@ export const Results: React.FC = () => {
               <div className="text-2xl font-bold text-gray-900">
                 {metricsSummary.avg_reasoning ? `${(metricsSummary.avg_reasoning * 100).toFixed(1)}%` : 'N/A'}
               </div>
-            </div>
-            
+        </div>
+
             {/* Cost */}
             <div className="bg-white rounded-xl p-6 border border-gray-200">
               <div className="flex items-center justify-between mb-2">

@@ -721,9 +721,9 @@ export const CreateDataset: React.FC = () => {
                           {q.editing ? (
                             <div className="space-y-1">
                               <select
-                                value={q.context || ''}
-                                onChange={(e) => updateQuestion(q.id, { context: e.target.value })}
-                                className="input text-sm"
+                              value={q.context || ''}
+                              onChange={(e) => updateQuestion(q.id, { context: e.target.value })}
+                              className="input text-sm"
                               >
                                 <option value="">Select document...</option>
                                 {documents.map((doc) => (

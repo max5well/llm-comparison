@@ -32,7 +32,9 @@
       "Bash(env)",
       "Bash(unset:*)",
       "Bash(git checkout:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git reset:*)",
+      "Bash(git diff:*)"
     ],
     "deny": [],
     "ask": []
