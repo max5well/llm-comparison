@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     # API Keys for LLM Providers
     openai_api_key: Optional[str] = None
     anthropic_api_key: Optional[str] = None
+    anthropic_base_url: Optional[str] = None  # Support for custom Anthropic endpoints
     mistral_api_key: Optional[str] = None
     together_api_key: Optional[str] = None
     huggingface_api_key: Optional[str] = None
