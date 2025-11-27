@@ -13,7 +13,7 @@ interface Rating {
   feedback?: string;
 }
 
-export const HumanRating: React.FC = () => {
+const HumanRating: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<EvaluationDetails | null>(null);
@@ -288,4 +288,6 @@ export const HumanRating: React.FC = () => {
     </Layout>
   );
 };
+
+export default HumanRating;
 

@@ -19,7 +19,7 @@ import { DashboardHome } from './pages/DashboardHome';
 import { EvaluationWaiting } from './pages/EvaluationWaiting';
 import JudgmentSelection from './pages/JudgmentSelection';
 import JudgmentWaiting from './pages/JudgmentWaiting';
-import { HumanRating } from './pages/HumanRating';
+import HumanRating from './pages/HumanRating';
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
