@@ -33,6 +33,20 @@ class ApiClient {
     // Load from localStorage
     this.userId = localStorage.getItem('user_id');
     this.apiKey = localStorage.getItem('api_key');
+
+    // Add request interceptor to include authentication headers
+    this.client.interceptors.request.use(
+      (config) => {
+        if (this.userId && this.apiKey) {
+          config.headers['X-API-Key'] = this.apiKey;
+          config.headers['X-User-ID'] = this.userId;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
   }
 
   setAuth(userId: string, apiKey: string) {
