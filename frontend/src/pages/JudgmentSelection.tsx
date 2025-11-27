@@ -39,9 +39,9 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
     setIsLoading(true);
     try {
       const [evaluationRes, questionsRes, modelResultsRes] = await Promise.all([
-        api.get(`/evaluation/${evaluationId}`),
-        api.get(`/evaluation/dataset/${evaluationData?.dataset_id}/questions`),
-        api.get(`/results/${evaluationId}/model-results`)
+        api.client.get(`/evaluation/${evaluationId}`),
+        api.client.get(`/evaluation/dataset/${evaluationData?.dataset_id}/questions`),
+        api.client.get(`/results/${evaluationId}/model-results`)
       ]);
 
       setEvaluationData(evaluationRes.data);
@@ -65,7 +65,7 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
     setIsLoading(true);
     try {
       // Start the judging process
-      await api.post(`/evaluation/${evaluationId}/judge`, {
+      await api.client.post(`/evaluation/${evaluationId}/judge`, {
         judgment_type: selectedJudgment
       });
 

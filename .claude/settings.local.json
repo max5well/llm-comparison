@@ -38,7 +38,8 @@
       "Bash(git stash pop:*)",
       "Bash(killall:*)",
       "Bash(find:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(npm run)"
     ],
     "deny": [],
     "ask": []

@@ -10,7 +10,6 @@ import {
   Clock3,
   Star,
 } from 'lucide-react';
-import { Layout } from '../components/Layout';
 
 const featureCards = [
   {
@@ -86,7 +85,8 @@ const testimonials = [
 
 export const Home: React.FC = () => {
   return (
-    <Layout>
+    <>
+      {/* Landing Page Header - separate from Layout */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <nav className="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -118,7 +118,7 @@ export const Home: React.FC = () => {
         </nav>
       </header>
 
-      <main className="bg-gray-50">
+      <main className="bg-gray-50 min-h-screen">
         <section id="hero-section" className="py-20">
           <div className="max-w-7xl mx-auto px-8">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -302,6 +302,15 @@ export const Home: React.FC = () => {
           </div>
         </section>
       </main>
-    </Layout>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-8 py-4">
+          <p className="text-center text-sm text-gray-500">
+            LLM Compare Platform - Evaluate and compare LLM performance
+          </p>
+        </div>
+      </footer>
+    </>
   );
 };

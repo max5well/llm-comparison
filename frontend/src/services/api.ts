@@ -12,10 +12,13 @@ import type {
   EvaluationSummary,
   EvaluationDetails,
   TestQuestion,
+  EvaluationResponse,
+  TestQuestionResponse,
+  ModelResultResponse,
 } from '../types';
 
 class ApiClient {
-  private client: AxiosInstance;
+  public client: AxiosInstance;
   private userId: string | null = null;
   private apiKey: string | null = null;
 

@@ -335,3 +335,43 @@ export const LLM_MODELS: Record<string, string[]> = {
   together: [...TOGETHER_MODELS],
   huggingface: [...HUGGINGFACE_MODELS],
 };
+
+// Response Types for API calls
+export interface EvaluationResponse {
+  id: string;
+  workspace_id: string;
+  dataset_id: string;
+  name: string;
+  models_to_test: ModelConfig[];
+  judge_model: string;
+  judge_provider: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress?: number;
+  created_at: string;
+  completed_at?: string;
+}
+
+export interface TestQuestionResponse {
+  id: string;
+  dataset_id: string;
+  question: string;
+  expected_answer?: string;
+  context?: string;
+  created_at: string;
+}
+
+export interface ModelResultResponse {
+  id: string;
+  evaluation_id: string;
+  model: string;
+  provider: string;
+  question_id: string;
+  answer: string;
+  latency_ms: number;
+  cost_usd: number;
+  input_tokens: number;
+  output_tokens: number;
+  error?: string;
+  response_count?: number;
+  created_at: string;
+}

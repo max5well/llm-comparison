@@ -140,7 +140,7 @@ export const GoogleDrivePicker: React.FC<GoogleDrivePickerProps> = ({
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <LoadingSpinner size="large" />
+              <LoadingSpinner size="lg" />
             </div>
           ) : error && !importStatus ? (
             <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">

@@ -21,11 +21,11 @@ const JudgmentWaiting: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const response = await api.get(`/evaluation/${evaluationId}`);
+      const response = await api.client.get(`/evaluation/${evaluationId}`);
       setEvaluation(response.data);
 
       // Check if judgment is complete
-      const judgmentResponse = await api.get(`/evaluation/${evaluationId}/judgment-status`);
+      const judgmentResponse = await api.client.get(`/evaluation/${evaluationId}/judgment-status`);
       if (judgmentResponse.data.status === 'completed') {
         navigate(`/results/${evaluationId}`);
       }
@@ -43,7 +43,7 @@ const JudgmentWaiting: React.FC = () => {
 
     const interval = setInterval(async () => {
       try {
-        const response = await api.get(`/evaluation/${evaluationId}/judgment-status`);
+        const response = await api.client.get(`/evaluation/${evaluationId}/judgment-status`);
         if (response.data.status === 'completed') {
           clearInterval(interval);
           navigate(`/results/${evaluationId}`);

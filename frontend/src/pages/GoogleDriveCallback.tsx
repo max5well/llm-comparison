@@ -101,7 +101,7 @@ export const GoogleDriveCallback: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 max-w-md">
         <div className="text-center space-y-4">
-          <LoadingSpinner size="large" />
+          <LoadingSpinner size="lg" />
           <h2 className="text-xl font-semibold text-gray-900">Connecting Google Drive</h2>
           <p className="text-sm text-gray-600">Please wait while we complete the connection...</p>
         </div>
