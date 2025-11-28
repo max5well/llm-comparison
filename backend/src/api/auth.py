@@ -363,13 +363,19 @@ async def google_oauth_callback(
     and create or update the user in our database.
     """
     try:
+        print(f"🔄 Google OAuth callback started with code: {request.code[:20]}... state: {request.state}")
+
         oauth_service = GoogleOAuthService()
 
         # Exchange code for tokens
+        print("🔄 Exchanging code for tokens...")
         token_info = oauth_service.exchange_code_for_tokens(request.code)
+        print(f"✅ Token exchange successful. Access token: {token_info.get('access_token', 'N/A')[:20]}...")
 
         # Get user info from Google
+        print("🔄 Getting user info from Google...")
         user_info = oauth_service.get_user_info(token_info['access_token'])
+        print(f"✅ User info retrieved. Email: {user_info.get('email')}, Name: {user_info.get('name')}")
 
         # Parse token expiry
         token_expiry = None
@@ -381,6 +387,7 @@ async def google_oauth_callback(
         user = db.query(User).filter(User.google_id == user_info['id']).first()
 
         if user:
+            print(f"✅ Existing user found: {user.email}")
             # Update existing user's tokens (login only, no Drive access)
             user.google_access_token = token_info['access_token']
             user.google_refresh_token = token_info.get('refresh_token') or user.google_refresh_token
@@ -401,6 +408,7 @@ async def google_oauth_callback(
                 message="Successfully authenticated with Google"
             )
         else:
+            print(f"🔄 Creating new user for: {user_info.get('email')}")
             # Create new user
             api_key_raw = str(uuid.uuid4())
             from src.utils.auth import hash_api_key
@@ -425,6 +433,7 @@ async def google_oauth_callback(
             db.add(new_user)
             db.commit()
             db.refresh(new_user)
+            print(f"✅ New user created: {new_user.email}")
 
             return GoogleAuthResponse(
                 user_id=str(new_user.id),
@@ -436,9 +445,14 @@ async def google_oauth_callback(
             )
 
     except Exception as e:
+        import traceback
+        error_detail = f"OAuth callback failed: {str(e)}"
+        print(f"❌ {error_detail}")
+        print(f"❌ Traceback: {traceback.format_exc()}")
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"OAuth callback failed: {str(e)}"
+            detail=error_detail
         )
 
 
