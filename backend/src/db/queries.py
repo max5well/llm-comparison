@@ -180,6 +180,10 @@ def get_dataset_questions(db: Session, dataset_id: UUID) -> List[TestQuestion]:
     return db.query(TestQuestion).filter(TestQuestion.dataset_id == dataset_id).all()
 
 
+def get_test_question(db: Session, question_id: UUID) -> Optional[TestQuestion]:
+    return db.query(TestQuestion).filter(TestQuestion.id == question_id).first()
+
+
 # Evaluation queries
 def create_evaluation(db: Session, workspace_id: UUID, dataset_id: UUID, name: str,
                      models_tested: List[str], **kwargs) -> Evaluation:

@@ -367,9 +367,10 @@ async def google_oauth_callback(
 
         oauth_service = GoogleOAuthService()
 
-        # Exchange code for tokens
+        # Exchange code for tokens - explicitly use LOGIN_SCOPES for consistency
         print("🔄 Exchanging code for tokens...")
-        token_info = oauth_service.exchange_code_for_tokens(request.code)
+        from src.core.google_oauth import LOGIN_SCOPES
+        token_info = oauth_service.exchange_code_for_tokens(request.code, scopes=LOGIN_SCOPES)
         print(f"✅ Token exchange successful. Access token: {token_info.get('access_token', 'N/A')[:20]}...")
 
         # Get user info from Google

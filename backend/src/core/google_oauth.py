@@ -101,7 +101,32 @@ class GoogleOAuthService:
             redirect_uri=redirect
         )
 
-        flow.fetch_token(code=code)
+        # Use include_granted_scopes='false' to prevent scope expansion
+        # and handle the OAuth flow more flexibly
+        try:
+            flow.fetch_token(code=code, include_granted_scopes='false')
+        except Exception as e:
+            # If there's still a scope mismatch, try with a more permissive approach
+            if "Scope has changed" in str(e):
+                print(f"⚠️  Scope detected, attempting flexible token exchange...")
+                # Create a new flow without strict scope validation
+                flow = Flow.from_client_config(
+                    {
+                        "web": {
+                            "client_id": self.client_id,
+                            "client_secret": self.client_secret,
+                            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                            "token_uri": "https://oauth2.googleapis.com/token",
+                            "redirect_uris": [redirect]
+                        }
+                    },
+                    scopes=None,  # Let OAuth library handle scopes automatically
+                    redirect_uri=redirect
+                )
+                flow.fetch_token(code=code)
+            else:
+                raise e
+
         credentials = flow.credentials
 
         return {
