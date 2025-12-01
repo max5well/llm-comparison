@@ -32,15 +32,15 @@ export const EvaluationWaiting: React.FC = () => {
           try {
             await api.getEvaluationDetails(id);
             clearInterval(interval);
-            // Data is ready, redirect to results page
-            navigate(`/results/${id}`);
+            // Data is ready, redirect to judgment selection step
+            navigate(`/evaluations/${id}/judgment`);
           } catch (error) {
             // Results not ready yet, keep waiting
             verificationAttempts++;
             if (verificationAttempts >= maxVerificationAttempts) {
               clearInterval(interval);
-              // After max attempts, redirect anyway - Results page will handle retries
-              navigate(`/results/${id}`);
+              // After max attempts, redirect to judgment selection anyway
+              navigate(`/evaluations/${id}/judgment`);
             }
           }
         } else if (status.status === 'failed') {

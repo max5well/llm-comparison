@@ -39,7 +39,8 @@
       "Bash(killall:*)",
       "Bash(find:*)",
       "Bash(git restore:*)",
-      "Bash(npm run)"
+      "Bash(npm run)",
+      "Bash(/tmp/test.pdf)"
     ],
     "deny": [],
     "ask": []

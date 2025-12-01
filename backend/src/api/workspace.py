@@ -286,12 +286,15 @@ async def delete_workspace_endpoint(
 async def upload_document(
     workspace_id: str,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    x_upload_fallback: str = None,
+    x_original_filename: str = None
 ):
     """
     Upload a document to a workspace.
 
     Supported file types: PDF, DOCX, TXT
+    Includes fallback support for problematic uploads.
     """
     # Verify workspace exists
     workspace = get_workspace(db, UUID(workspace_id))
@@ -301,39 +304,92 @@ async def upload_document(
             detail="Workspace not found"
         )
 
+    # Handle fallback cases
+    filename = x_original_filename or file.filename
+
+    # If this is a base64 fallback, handle it specially
+    if x_upload_fallback == "base64-converted" and filename and filename.endswith('.pdf'):
+        return await handle_base64_pdf_upload(workspace_id, file, filename, db)
+
+    # If this is a text content bypass fallback, handle it specially
+    if x_upload_fallback == "text-content-bypass" and x_original_filename and x_original_filename.endswith('.pdf'):
+        return await handle_text_content_bypass_upload(workspace_id, file, x_original_filename, db)
+
     # Check file type using DocumentExtractor's supported types
     from src.utils.document_extraction import DocumentExtractor
 
-    if not DocumentExtractor.is_supported_file(file.filename):
+    # Debug logging to understand what filename we're checking
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
+    logger.info(f"Upload filename validation check:")
+    logger.info(f"  Original filename from file object: {file.filename}")
+    logger.info(f"  Processed filename (x_original_filename fallback): {filename}")
+    logger.info(f"  File extension: {os.path.splitext(filename)[1]}")
+    logger.info(f"  Supported by DocumentExtractor: {DocumentExtractor.is_supported_file(filename)}")
+
+    if not DocumentExtractor.is_supported_file(filename):
+        logger.error(f"File type validation failed for: {filename}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File type not supported. Please upload a supported file format."
         )
-    
-    file_ext = os.path.splitext(file.filename)[1][1:]  # Remove the dot
+
+    file_ext = os.path.splitext(filename)[1][1:]  # Remove the dot
 
     # Create upload directory
     upload_dir = f"./data/uploads/{workspace_id}"
     os.makedirs(upload_dir, exist_ok=True)
 
+    # Use normalized filename for filename normalization fallback
+    save_filename = filename
+    if x_upload_fallback == "filename-normalization":
+        # Replace special characters with underscores
+        save_filename = "".join(c if c.isalnum() or c in ".-_" else "_" for c in filename)
+
     # Save file
-    file_path = os.path.join(upload_dir, file.filename)
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    file_path = os.path.join(upload_dir, save_filename)
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Failed to save file: {str(e)}"
+        )
 
     # Get file size
-    file_size = os.path.getsize(file_path)
+    try:
+        file_size = os.path.getsize(file_path)
+    except Exception as e:
+        # Clean up file if we can't get its size
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Failed to process file: {str(e)}"
+        )
 
     # Create document record
-    document = create_document(
-        db=db,
-        workspace_id=UUID(workspace_id),
-        filename=file.filename,
-        file_path=file_path,
-        file_type=file_ext,
-        file_size_bytes=file_size,
-        processing_status="pending"
-    )
+    try:
+        document = create_document(
+            db=db,
+            workspace_id=UUID(workspace_id),
+            filename=filename,  # Keep original filename for display
+            file_path=file_path,
+            file_type=file_ext,
+            file_size_bytes=file_size,
+            processing_status="pending"
+        )
+    except Exception as e:
+        # Clean up file if database creation fails
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Failed to create document record: {str(e)}"
+        )
 
     return DocumentResponse(
         id=str(document.id),
@@ -345,6 +401,135 @@ async def upload_document(
         total_chunks=document.total_chunks,
         created_at=document.created_at.isoformat()
     )
+
+
+async def handle_base64_pdf_upload(workspace_id: str, file: UploadFile, original_filename: str, db: Session) -> DocumentResponse:
+    """
+    Handle base64-encoded PDF uploads from frontend fallback.
+
+    This converts a base64-encoded PDF back to a PDF file.
+    """
+    import base64
+    import re
+
+    try:
+        # Read the base64 content
+        content = await file.read()
+
+        # Decode from string if needed
+        if isinstance(content, bytes):
+            content = content.decode('utf-8')
+
+        # Extract base64 data (remove data:application/pdf;base64, prefix if present)
+        base64_match = re.search(r'base64,(.+)', content)
+        if base64_match:
+            base64_data = base64_match.group(1)
+        else:
+            # Assume entire content is base64
+            base64_data = content
+
+        # Decode base64 to PDF bytes
+        pdf_bytes = base64.b64decode(base64_data)
+
+        # Create upload directory
+        upload_dir = f"./data/uploads/{workspace_id}"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Save as PDF file
+        file_path = os.path.join(upload_dir, original_filename)
+        with open(file_path, "wb") as buffer:
+            buffer.write(pdf_bytes)
+
+        # Get file size
+        file_size = len(pdf_bytes)
+
+        # Create document record
+        document = create_document(
+            db=db,
+            workspace_id=UUID(workspace_id),
+            filename=original_filename,
+            file_path=file_path,
+            file_type="pdf",
+            file_size_bytes=file_size,
+            processing_status="pending"
+        )
+
+        return DocumentResponse(
+            id=str(document.id),
+            workspace_id=str(document.workspace_id),
+            filename=document.filename,
+            file_type=document.file_type,
+            file_size_bytes=document.file_size_bytes,
+            processing_status=document.processing_status,
+            total_chunks=document.total_chunks,
+            created_at=document.created_at.isoformat()
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Failed to process base64 PDF upload: {str(e)}"
+        )
+
+
+async def handle_text_content_bypass_upload(workspace_id: str, file: UploadFile, original_filename: str, db: Session) -> DocumentResponse:
+    """
+    Handle text content bypass uploads from frontend fallback.
+
+    This converts text content back to the original PDF binary data.
+    """
+    try:
+        # Read the text content (which contains the PDF binary data)
+        content = await file.read()
+
+        # Convert text back to binary
+        if isinstance(content, bytes):
+            content = content.decode('utf-8')
+
+        # Convert each character back to its original byte value
+        pdf_bytes = bytearray()
+        for char in content:
+            pdf_bytes.append(ord(char))
+
+        # Create upload directory
+        upload_dir = f"./data/uploads/{workspace_id}"
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Save as PDF file
+        file_path = os.path.join(upload_dir, original_filename)
+        with open(file_path, "wb") as buffer:
+            buffer.write(pdf_bytes)
+
+        # Get file size
+        file_size = len(pdf_bytes)
+
+        # Create document record
+        document = create_document(
+            db=db,
+            workspace_id=UUID(workspace_id),
+            filename=original_filename,
+            file_path=file_path,
+            file_type="pdf",
+            file_size_bytes=file_size,
+            processing_status="pending"
+        )
+
+        return DocumentResponse(
+            id=str(document.id),
+            workspace_id=str(document.workspace_id),
+            filename=document.filename,
+            file_type=document.file_type,
+            file_size_bytes=document.file_size_bytes,
+            processing_status=document.processing_status,
+            total_chunks=document.total_chunks,
+            created_at=document.created_at.isoformat()
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Failed to process text content bypass upload: {str(e)}"
+        )
 
 
 @router.get("/{workspace_id}/documents", response_model=List[DocumentResponse])

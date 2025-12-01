@@ -131,7 +131,7 @@ Generate exactly {num_questions} question(s). Return ONLY the JSON array, no oth
             # Extract filename from chunk_metadata if available for easier access
             source_filename = 'Document'
             if chunk_metadata and isinstance(chunk_metadata, dict):
-                source_filename = chunk_metadata.get('document_filename', 'Document')
+                source_filename = chunk_metadata.get('document_name', chunk_metadata.get('document_filename', 'Document'))
             
             synthetic_questions.append(SyntheticQuestion(
                 question=q_data.get('question', ''),

@@ -1,121 +1,126 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
-import {
-  EvaluationResponse,
-  TestQuestionResponse,
-  ModelResultResponse
-} from '../types';
+import type { Evaluation, Question, ModelResult } from '../types';
 
-interface JudgmentSelectionProps {
-  evaluation?: EvaluationResponse;
-  questions?: TestQuestionResponse[];
-  modelResults?: ModelResultResponse[];
-}
+const JudgmentSelection: React.FC = () => {
+  // Debug logging at component render
+  console.log('JudgmentSelection component rendering...');
+  console.log('Full URL:', window.location.href);
+  console.log('Pathname:', window.location.pathname);
 
-const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
-  evaluation,
-  questions = [],
-  modelResults = []
-}) => {
-  const { evaluationId } = useParams<{ evaluationId: string }>();
+  const { id: evaluationId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedJudgment, setSelectedJudgment] = useState<string>('');
-  const [evaluationData, setEvaluationData] = useState<EvaluationResponse | null>(null);
   const [error, setError] = useState<string>('');
 
+  // Evaluation data
+  const [evaluationData, setEvaluationData] = useState<Evaluation | null>(null);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [modelResults, setModelResults] = useState<ModelResult[]>([]);
+
+  // Log params immediately after getting them
+  console.log('useParams result on render:', { evaluationId });
+
   useEffect(() => {
-    if (!evaluation) {
-      fetchEvaluationData();
-    } else {
-      setEvaluationData(evaluation);
-    }
-  }, [evaluation]);
+    // Debug logging
+    console.log('JudgmentSelection useEffect triggered');
+    console.log('Current URL:', window.location.pathname);
+    console.log('useParams result:', { evaluationId });
+    console.log('URL search params:', window.location.search);
 
-  const fetchEvaluationData = async () => {
-    if (!evaluationId) return;
-
-    setIsLoading(true);
-    try {
-      const [evaluationRes, questionsRes, modelResultsRes] = await Promise.all([
-        api.client.get(`/evaluation/${evaluationId}`),
-        api.client.get(`/evaluation/dataset/${evaluationData?.dataset_id}/questions`),
-        api.client.get(`/results/${evaluationId}/model-results`)
-      ]);
-
-      setEvaluationData(evaluationRes.data);
-      // Note: questions and model results would need to be handled differently
-    } catch (err) {
-      setError('Failed to load evaluation data');
-      console.error('Error fetching evaluation data:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleJudgmentSubmit = async () => {
-    if (!selectedJudgment) {
-      setError('Please select a judgment method');
+    if (!evaluationId) {
+      console.error('No evaluationId found in URL params');
+      setError('No evaluation ID provided');
       return;
     }
 
-    if (!evaluationId) return;
+    const loadEvaluationData = async () => {
+      try {
+        setIsLoading(true);
+        setError('');
+
+        // Load evaluation details
+        const evaluation = await api.getEvaluation(evaluationId);
+        console.log('Loaded evaluation data:', evaluation);
+        setEvaluationData(evaluation);
+
+        // Check if dataset_id exists
+        if (!evaluation.dataset_id) {
+          console.error('No dataset_id found in evaluation data');
+          setError('Evaluation data is missing dataset information');
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('Loading questions for dataset_id:', evaluation.dataset_id);
+
+        // Load evaluation results and questions
+        const [details, questionsData] = await Promise.all([
+          api.getEvaluationDetails(evaluationId),
+          api.getDatasetQuestions(evaluation.dataset_id).catch(err => {
+            console.error('Error loading dataset questions:', err);
+            throw err;
+          })
+        ]);
+
+        console.log('Loaded questions data:', questionsData);
+        setQuestions(questionsData);
+        setModelResults(details.model_results || []);
+
+      } catch (err: any) {
+        console.error('Error loading evaluation data:', err);
+        setError(`Failed to load evaluation: ${err.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadEvaluationData();
+  }, [evaluationId]);
+
+  const handleJudgmentSubmit = async () => {
+    if (!selectedJudgment || !evaluationId) return;
 
     setIsLoading(true);
     try {
-      // Start the judging process
-      await api.client.post(`/evaluation/${evaluationId}/judge`, {
+      // Start judgment process
+      const response = await api.startJudgment(evaluationId, {
         judgment_type: selectedJudgment
       });
 
-      // Navigate to waiting page for judgment
-      navigate(`/evaluation/${evaluationId}/judging`);
-    } catch (err) {
-      setError('Failed to start judgment process');
+      // Navigate based on judgment type and response status
+      if (selectedJudgment === 'human' || selectedJudgment === 'both') {
+        // For human judgment, navigate to human rating page
+        navigate(`/evaluations/${evaluationId}/human-rating`);
+      } else {
+        // For LLM-only judgment, go directly to results
+        navigate(`/evaluations/${evaluationId}/results`);
+      }
+    } catch (err: any) {
       console.error('Error starting judgment:', err);
+      setError(`Failed to start judgment: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleViewResults = async () => {
-    if (!evaluationId) return;
-    navigate(`/results/${evaluationId}`);
+  const handleViewResults = () => {
+    if (evaluationId) {
+      navigate(`/evaluations/${evaluationId}/results`);
+    }
   };
 
-  if (isLoading) {
+  if (isLoading && !evaluationData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading evaluation data...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading evaluation...</p>
         </div>
       </div>
     );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="max-w-md w-full mx-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-red-800 text-lg font-semibold mb-2">Error</h2>
-            <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={fetchEvaluationData}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!evaluationData) {
-    return null;
   }
 
   return (
@@ -123,16 +128,19 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex justify-between items-center py-6">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <i className="fa-solid fa-layer-group text-white text-lg"></i>
-              </div>
-              <span className="ml-3 text-xl font-bold text-gray-900">LLM Compare</span>
+              <button
+                onClick={() => navigate('/')}
+                className="text-gray-400 hover:text-gray-600 mr-4"
+              >
+                <i className="fas fa-arrow-left"></i>
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">Judgment Selection</h1>
             </div>
             <button
               onClick={handleViewResults}
-              className="px-4 py-2 text-gray-700 hover:text-primary-600 font-medium transition-colors"
+              className="px-4 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
             >
               Skip to Results
             </button>
@@ -156,7 +164,7 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Evaluation Summary</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center">
-              <div className="text-3xl font-bold text-primary-600">
+              <div className="text-3xl font-bold text-blue-600">
                 {modelResults.length}
               </div>
               <div className="text-gray-600">Models Tested</div>
@@ -176,10 +184,10 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
           </div>
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="text-sm text-gray-600">
-              <span className="font-medium">Evaluation Name:</span> {evaluationData.name}
+              <span className="font-medium">Evaluation Name:</span> {evaluationData?.name}
             </div>
             <div className="text-sm text-gray-600">
-              <span className="font-medium">Completed:</span> {new Date(evaluationData.completed_at || '').toLocaleString()}
+              <span className="font-medium">Completed:</span> {new Date(evaluationData?.completed_at || '').toLocaleString()}
             </div>
           </div>
         </div>
@@ -193,8 +201,8 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
             <div
               className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
                 selectedJudgment === 'human'
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
               onClick={() => setSelectedJudgment('human')}
             >
@@ -202,7 +210,7 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
                 <div className="flex-shrink-0">
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                     selectedJudgment === 'human'
-                      ? 'border-primary-500 bg-primary-500'
+                      ? 'border-blue-500 bg-blue-500'
                       : 'border-gray-300'
                   }`}>
                     {selectedJudgment === 'human' && (
@@ -229,8 +237,8 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
             <div
               className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
                 selectedJudgment === 'llm'
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
               onClick={() => setSelectedJudgment('llm')}
             >
@@ -238,7 +246,7 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
                 <div className="flex-shrink-0">
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                     selectedJudgment === 'llm'
-                      ? 'border-primary-500 bg-primary-500'
+                      ? 'border-blue-500 bg-blue-500'
                       : 'border-gray-300'
                   }`}>
                     {selectedJudgment === 'llm' && (
@@ -265,8 +273,8 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
             <div
               className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
                 selectedJudgment === 'both'
-                  ? 'border-primary-500 bg-primary-50'
-                  : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               }`}
               onClick={() => setSelectedJudgment('both')}
             >
@@ -274,7 +282,7 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
                 <div className="flex-shrink-0">
                   <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                     selectedJudgment === 'both'
-                      ? 'border-primary-500 bg-primary-500'
+                      ? 'border-blue-500 bg-blue-500'
                       : 'border-gray-300'
                   }`}>
                     {selectedJudgment === 'both' && (
@@ -312,7 +320,7 @@ const JudgmentSelection: React.FC<JudgmentSelectionProps> = ({
               disabled={!selectedJudgment || isLoading}
               className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-colors ${
                 selectedJudgment && !isLoading
-                  ? 'bg-primary-600 text-white hover:bg-primary-700'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
               }`}
             >

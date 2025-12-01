@@ -12,7 +12,7 @@ from datetime import datetime
 from src.db.database import get_db
 from src.db.queries import (
     get_workspace, create_test_dataset, get_test_dataset,
-    create_test_question, get_dataset_questions, create_evaluation,
+    create_test_question, get_test_question, get_dataset_questions, create_evaluation,
     get_evaluation, update_evaluation_status, create_model_result,
     create_judge_result, create_or_update_metrics, get_evaluation_metrics,
     get_evaluation_results, get_evaluation_judge_results, get_workspace_datasets,
@@ -836,11 +836,17 @@ async def run_judgment_background(
                     print(f"Processing result {i+1}/{len(model_results)} for model {model_result.model_name}")
 
                     try:
+                        # Get the question for this model result
+                        question = get_test_question(db, model_result.question_id)
+                        if not question:
+                            print(f"Question {model_result.question_id} not found for result {model_result.id}")
+                            continue
+
                         # Create judge result using evaluate_single_answer
                         judge_result = await judge.evaluate_single_answer(
                             question=question.question,
-                            answer=model_result.response,
-                            context=model_result.context,
+                            answer=model_result.answer,  # Use model_result.answer instead of response
+                            context=None,  # Context not directly available in model result
                             reference_answer=None  # No ground truth for RAG evaluation
                         )
 

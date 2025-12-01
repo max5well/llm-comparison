@@ -45,21 +45,28 @@ export const Results: React.FC = () => {
     if (!id) return;
 
     try {
+      console.log('🔄 Loading results for evaluation ID:', id);
+
       const [results, summary, metrics] = await Promise.all([
-        api.getEvaluationDetails(id),
+        api.getEvaluationDetails(id).catch((err) => {
+          console.error('❌ Failed to load evaluation details:', err.response?.status, err.response?.data);
+          throw err;
+        }),
         api.getEvaluationMetricsSummary(id).catch((err) => {
-          console.log('Metrics summary not available:', err.response?.status, err.response?.data);
+          console.log('⚠️ Metrics summary not available:', err.response?.status, err.response?.data);
           return null;
         }),
         api.getEvaluationMetrics(id).catch((err) => {
-          console.log('Metrics by model not available:', err.response?.status, err.response?.data);
+          console.log('⚠️ Metrics by model not available:', err.response?.status, err.response?.data);
           return null;
         }),
       ]);
+
+      console.log('📊 Evaluation details loaded:', results);
       setData(results);
       setMetricsSummary(summary);
       setMetricsByModel(metrics);
-      
+
       // Debug logging
       if (summary) {
         console.log('✅ Metrics summary loaded:', summary);
@@ -72,7 +79,8 @@ export const Results: React.FC = () => {
         console.log('⚠️ No metrics by model available for this evaluation');
       }
     } catch (error) {
-      console.error('Failed to load results:', error);
+      console.error('❌ Failed to load results:', error);
+      console.error('Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }

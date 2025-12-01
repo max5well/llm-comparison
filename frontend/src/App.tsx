@@ -167,7 +167,25 @@ function App() {
         />
 
         <Route
+          path="/evaluations/:id/human-rating"
+          element={
+            <ProtectedRoute>
+              <HumanRating />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
           path="/results/:id"
+          element={
+            <ProtectedRoute>
+              <Results />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/evaluations/:id/results"
           element={
             <ProtectedRoute>
               <Results />
