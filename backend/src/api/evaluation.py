@@ -836,25 +836,31 @@ async def run_judgment_background(
                     print(f"Processing result {i+1}/{len(model_results)} for model {model_result.model_name}")
 
                     try:
-                        # Create judge result
-                        judge_result = await judge.evaluate(
-                            question_id=model_result.question_id,
-                            model_response=model_result.response,
+                        # Create judge result using evaluate_single_answer
+                        judge_result = await judge.evaluate_single_answer(
+                            question=question.question,
+                            answer=model_result.response,
                             context=model_result.context,
-                            ground_truth=None  # No ground truth for RAG evaluation
+                            reference_answer=None  # No ground truth for RAG evaluation
                         )
 
-                        # Save to database
-                        create_judgment_result(
-                            db=db,
-                            evaluation_id=UUID(evaluation_id),
-                            model_result_id=model_result.id,
-                            judge_response=judge_result.content,
-                            score=judge_result.score,
-                            feedback=judge_result.feedback,
-                            judgment_provider=judge_result.provider,
-                            judgment_model=judge_result.model
-                        )
+                        # Store judgment result in model result metadata
+                        if model_result.item_metadata is None:
+                            model_result.item_metadata = {}
+
+                        model_result.item_metadata.update({
+                            "judgment": {
+                                "judge_model": judge_model,
+                                "judge_provider": judge_provider,
+                                "judge_response": judge_result.get("reasoning", ""),
+                                "score": judge_result.get("overall_score", 0),
+                                "criteria_scores": judge_result.get("criteria_scores", {}),
+                                "feedback": judge_result.get("feedback", "")
+                            }
+                        })
+
+                        db.commit()
+                        db.refresh(model_result)
 
                         print(f"Completed judgment for result {model_result.id}")
 
@@ -873,16 +879,23 @@ async def run_judgment_background(
             # For now, we'll create placeholder results
             for model_result in model_results:
                 try:
-                    create_judgment_result(
-                        db=db,
-                        evaluation_id=UUID(evaluation_id),
-                        model_result_id=model_result.id,
-                        judge_response="Human judgment pending",
-                        score=0.0,
-                        feedback="Human judgment not yet implemented",
-                        judgment_provider="human",
-                        judgment_model="manual"
-                    )
+                    # Store placeholder judgment in model result metadata
+                    if model_result.item_metadata is None:
+                        model_result.item_metadata = {}
+
+                    model_result.item_metadata.update({
+                        "judgment": {
+                            "judge_model": "human",
+                            "judge_provider": "human",
+                            "judge_response": "Human judgment pending",
+                            "score": 0.0,
+                            "criteria_scores": {},
+                            "feedback": "Human judgment not yet implemented - requires frontend interface"
+                        }
+                    })
+
+                    db.commit()
+                    db.refresh(model_result)
                 except Exception as e:
                     print(f"Error creating placeholder human judgment: {str(e)}")
                     continue
