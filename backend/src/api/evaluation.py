@@ -847,7 +847,7 @@ async def run_judgment_background(
                             question=question.question,
                             answer=model_result.answer,  # Use model_result.answer instead of response
                             context=None,  # Context not directly available in model result
-                            reference_answer=None  # No ground truth for RAG evaluation
+                            expected_answer=None  # No ground truth for RAG evaluation
                         )
 
                         # Store judgment result in model result metadata
