@@ -819,7 +819,7 @@ async def run_judgment_background(
             return
 
         # Get model results
-        model_results = get_model_results(db, UUID(evaluation_id))
+        model_results = get_evaluation_results(db, UUID(evaluation_id))
 
         if judgment_type in ["llm", "both"]:
             # Use LLM judge for automatic evaluation
